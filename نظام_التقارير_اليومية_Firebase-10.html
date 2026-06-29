@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام التقارير اليومية - م/ محمد عبد القوي</title>
+
+<!-- Firebase SDK (compat version - works without modules) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  window._fbReady = false;
+  window._app = null;
+  window._auth = null;
+  window._db = null;
+
+  window.initFirebase = function(cfg) {
+    try {
+      if(firebase.apps.length) {
+        window._app = firebase.apps[0];
+      } else {
+        window._app = firebase.initializeApp(cfg);
+      }
+      window._auth = firebase.auth();
+      window._db   = firebase.firestore();
+      window._fbReady = true;
+      return true;
+    } catch(e) {
+      console.error('Firebase init error:', e);
+      return false;
+    }
+  };
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+:root{
+  --steel:#1C2B3A;--concrete:#F0EDE8;--amber:#E8A020;--amber-light:#FDF3E3;
+  --rust:#C0392B;--green:#1E7A4A;--green-light:#E8F5EE;--mid:#5A6A77;
+  --line:#D5CFC8;--shadow:0 2px 12px rgba(28,43,58,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Cairo',sans-serif;background:var(--concrete);color:var(--steel);min-height:100vh;}
+
+/* FIREBASE SETUP */
+#fbSetupScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);}
+.fb-logo{font-size:48px;margin-bottom:6px;}
+.fb-title{font-size:18px;font-weight:900;color:#fff;margin-bottom:2px;}
+.fb-sub{font-size:11px;color:#FFA726;font-weight:700;margin-bottom:20px;text-align:center;}
+.fb-box{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.4);}
+.fb-box h3{font-size:14px;font-weight:700;margin-bottom:4px;}
+.fb-box p{font-size:11px;color:var(--mid);margin-bottom:14px;line-height:1.7;}
+.fb-steps{background:#FFF8E1;border-radius:10px;padding:12px;margin-bottom:14px;font-size:11px;line-height:2.0;color:#5D4037;}
+.fb-steps strong{color:#E65100;}
+.fb-connect-btn{width:100%;margin-top:4px;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6F00,#F57C00);color:#fff;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.fb-connect-btn:disabled{opacity:.5;cursor:not-allowed;}
+.fb-err{color:var(--rust);font-size:11px;font-weight:600;margin-top:8px;text-align:center;display:none;}
+.fb-ok{color:var(--green);font-size:11px;font-weight:600;margin-top:8px;text-align:center;display:none;}
+.fb-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#1C2B3A 0%,#2E4A62 100%);display:none;}
+.login-logo{font-size:52px;margin-bottom:8px;}
+.login-title{font-size:20px;font-weight:900;color:#fff;margin-bottom:2px;}
+.login-mgr{font-size:12px;color:var(--amber);font-weight:700;margin-bottom:24px;}
+.login-box{background:#fff;border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.login-box h3{font-size:15px;font-weight:700;margin-bottom:16px;}
+.fi{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-family:'Cairo',sans-serif;font-size:13px;color:var(--steel);background:var(--concrete);outline:none;transition:border-color .2s;direction:rtl;}
+.fi:focus{border-color:var(--amber);background:#fff;}
+.fi[readonly],.fi[disabled]{background:#F5F5F5;color:var(--mid);cursor:not-allowed;}
+textarea.fi{resize:vertical;}
+.lbl{display:block;font-size:12px;font-weight:600;color:var(--mid);margin-bottom:5px;margin-top:11px;}
+.lbl:first-of-type{margin-top:0;}
+.login-btn{width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:var(--steel);color:#fff;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}
+.login-err{color:var(--rust);font-size:12px;font-weight:600;margin-top:8px;text-align:center;display:none;}
+
+/* TOPBAR */
+.topbar{background:var(--steel);color:#fff;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.topbar-name{font-size:13px;font-weight:700;}
+.topbar-role{font-size:10px;font-weight:600;margin-top:1px;}
+.logout-btn{background:rgba(255,255,255,.12);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+
+/* TABS */
+.tab-bar{display:flex;background:var(--steel);}
+.tab-btn{flex:1;padding:10px 3px 8px;background:none;border:none;font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;color:rgba(255,255,255,.4);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.tab-btn .ti{font-size:15px;}
+.tab-btn.active{color:var(--amber);border-bottom-color:var(--amber);}
+.tab-btn .nbadge{background:var(--rust);color:#fff;font-size:9px;padding:1px 5px;border-radius:10px;}
+.app-view{display:none;}
+.app-view.active{display:block;}
+
+/* CARD / FORM */
+.card{background:#fff;border-radius:14px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow);}
+.card-title{font-size:13px;font-weight:700;color:var(--steel);margin-bottom:11px;display:flex;align-items:center;gap:8px;}
+.card-title .icon{width:27px;height:27px;background:var(--amber-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.section{display:none;padding:13px;padding-bottom:90px;animation:fadeIn .2s ease;}
+.section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}
+
+/* SUB-CONTRACTORS */
+.sc-block{background:#fff;border:1.5px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.sc-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--concrete);cursor:pointer;}
+.sc-header h4{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.sc-body{padding:10px 12px;}
+.sc-trade{display:grid;grid-template-columns:2fr 1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center;}
+.sc-trade input,.sc-trade select{margin:0;padding:8px 9px;font-size:12px;}
+.sc-header-actions{display:flex;gap:6px;align-items:center;}
+.sc-del-btn{background:#FDE8E6;border:none;border-radius:8px;width:26px;height:26px;color:var(--rust);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.wk-row{display:grid;grid-template-columns:2fr 1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center;}
+.col-hdr-row{display:grid;grid-template-columns:2fr 1fr 1fr 28px;gap:6px;margin-bottom:4px;}
+.col-hdr-row span{font-size:10px;font-weight:700;color:var(--mid);}
+.add-btn{width:100%;padding:9px;border:1.5px dashed var(--amber);background:var(--amber-light);color:var(--amber);border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-top:7px;}
+.add-btn:disabled{opacity:.4;cursor:not-allowed;}
+.weather-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:4px;}
+.weather-pill{display:flex;flex-direction:column;align-items:center;padding:9px 4px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;background:var(--concrete);gap:3px;}
+.weather-pill .em{font-size:18px;}.weather-pill .wl{font-size:10px;color:var(--mid);font-weight:600;}
+.weather-pill.selected{border-color:var(--amber);background:var(--amber-light);}
+.status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.sbadge{padding:9px 6px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);}
+.sbadge.green{border-color:var(--green);color:var(--green);background:var(--green-light);}
+.sbadge.amber{border-color:var(--amber);color:#B07A10;background:var(--amber-light);}
+.sbadge.red{border-color:var(--rust);color:var(--rust);background:#FDE8E6;}
+.info-chip{display:inline-flex;align-items:center;gap:4px;background:var(--amber-light);color:#B07A10;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:8px;}
+.divider{height:1px;background:var(--line);margin:11px 0;}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;gap:9px;padding:10px 15px;box-shadow:0 -4px 16px rgba(28,43,58,.08);z-index:100;}
+.btn-sec{flex:1;padding:12px;border:1.5px solid var(--steel);border-radius:12px;background:transparent;color:var(--steel);font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-pri{flex:2;padding:12px;border:none;border-radius:12px;background:var(--steel);color:#fff;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* STORE */
+.store-hdr{background:#1A3A2A;color:#fff;padding:11px 15px;display:flex;align-items:center;justify-content:space-between;}
+.store-tabs{display:flex;background:#fff;border-bottom:2px solid var(--line);}
+.store-tab{flex:1;padding:10px;text-align:center;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--mid);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.store-tab.active{color:var(--green);border-bottom-color:var(--green);}
+.store-sec{display:none;padding:13px;padding-bottom:24px;}
+.store-sec.active{display:block;}
+.mat-row{display:grid;gap:7px;margin-bottom:7px;align-items:center;}
+.mat-in{grid-template-columns:2fr 1fr 1fr 28px;}
+.mat-out{grid-template-columns:2fr 1fr 1fr 1.5fr 28px;}
+.mat-row input,.mat-row select{margin:0;padding:8px 9px;font-size:12px;}
+.del-row{width:28px;height:28px;background:#FDE8E6;border:none;border-radius:8px;color:var(--rust);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.col-hdr{font-size:10px;font-weight:700;color:var(--mid);}
+.store-sum-box{background:#1A3A2A;color:#fff;border-radius:14px;padding:15px;margin-bottom:12px;}
+.store-sum-box h3{font-size:13px;font-weight:700;color:#6EE8A0;margin-bottom:9px;}
+.ss-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;}
+.ss-row:last-child{border:none;}
+.ss-row .sl{color:rgba(255,255,255,.6);}
+.ss-row .sv{font-weight:700;color:#6EE8A0;}
+.save-btn{width:100%;padding:12px;border:none;border-radius:12px;background:var(--green);color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;}
+
+/* MERGE */
+.merge-hero{background:linear-gradient(135deg,#1C2B3A,#2E4A62);color:#fff;padding:14px 15px;}
+.merge-hero h2{font-size:15px;font-weight:900;}
+.merge-hero p{font-size:11px;color:var(--amber);margin-top:2px;}
+.merge-wrap{padding:13px;padding-bottom:30px;}
+.overview-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
+.overview-card h3{font-size:13px;font-weight:700;margin-bottom:10px;}
+.ov-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);}
+.ov-row:last-child{border:none;}
+.ov-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.ov-badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;}
+.ob-wait{background:var(--amber-light);color:#B07A10;}
+.ob-done{background:var(--green-light);color:var(--green);}
+.mp-bar{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 4px;}
+.mp-fill{height:100%;background:var(--green);border-radius:6px;transition:width .4s;}
+.inbox-item{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border-right:4px solid var(--amber);transition:border-color .3s;}
+.inbox-item.is-merged{border-right-color:var(--green);}
+.ib-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.ib-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;}
+.ib-preview{background:var(--concrete);border-radius:10px;padding:10px;font-size:11px;line-height:1.9;margin-bottom:10px;}
+.ib-tag{background:var(--concrete);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:var(--mid);}
+.ib-actions{display:flex;gap:8px;}
+.ib-view-btn{flex:1;padding:9px;border:1.5px solid var(--steel);border-radius:10px;background:transparent;color:var(--steel);font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.ib-merge-btn{flex:2;padding:9px;border:none;border-radius:10px;background:var(--steel);color:#fff;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.ib-merge-btn.active{background:var(--green);}
+.gen-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#7B2FBE,#5B21B6);color:#fff;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:14px;}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed;}
+.merged-box{background:#fff;border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px;border:2px solid var(--green);}
+.merged-hdr{background:var(--green);color:#fff;padding:13px 15px;display:flex;align-items:center;gap:8px;}
+.mr-sec{border-bottom:1px solid var(--line);}
+.mr-sec:last-child{border:none;}
+.mr-sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;background:var(--concrete);}
+.mr-sec-hdr h4{font-size:12px;font-weight:700;}
+.mr-sec-body{display:none;padding:12px 14px;}
+.mr-sec-body.open{display:block;}
+.mr-table{width:100%;border-collapse:collapse;font-size:11px;}
+.mr-table th{background:var(--steel);color:#fff;padding:6px 8px;text-align:right;}
+.mr-table td{padding:6px 8px;border-bottom:1px solid var(--line);}
+.mr-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mr-stat{background:var(--concrete);border-radius:10px;padding:10px;text-align:center;}
+.mr-stat .msv{font-size:18px;font-weight:900;}
+.mr-stat .msl{font-size:10px;color:var(--mid);font-weight:600;margin-top:2px;}
+
+/* USER MANAGEMENT */
+.um-hero{background:linear-gradient(135deg,#7B2FBE,#5B21B6);color:#fff;padding:14px 15px;}
+.um-hero h2{font-size:15px;font-weight:900;}
+.um-hero p{font-size:11px;color:#CE93F8;margin-top:2px;}
+.um-wrap{padding:13px;padding-bottom:30px;}
+.user-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border-right:4px solid var(--line);}
+.user-card.active-user{border-right-color:var(--green);}
+.user-card.inactive-user{border-right-color:var(--rust);opacity:.7;}
+.uc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.uc-left{display:flex;align-items:center;gap:10px;}
+.uc-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+.uc-name{font-size:13px;font-weight:700;}
+.uc-role{font-size:11px;color:var(--mid);}
+.uc-actions{display:flex;gap:6px;}
+.uc-btn{padding:6px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;border:none;}
+.uc-edit{background:var(--amber-light);color:#B07A10;}
+.uc-toggle{background:var(--green-light);color:var(--green);}
+.uc-toggle.off{background:#FDE8E6;color:var(--rust);}
+.uc-perms{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.perm-chip{padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;background:var(--concrete);color:var(--mid);}
+.perm-chip.on{background:var(--green-light);color:var(--green);}
+.new-user-btn{width:100%;padding:13px;border:2px dashed #7B2FBE;background:#F3E8FF;color:#7B2FBE;border-radius:12px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(28,43,58,.95);color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:1000;pointer-events:none;white-space:nowrap;box-shadow:0 4px 15px rgba(0,0,0,.2);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* MODAL */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal{background:#fff;border-radius:20px;width:100%;max-width:400px;padding:24px;max-height:90vh;overflow-y:auto;}
+.modal h3{margin-bottom:16px;font-size:16px;}
+
+.perm-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+.perm-table th{text-align:right;padding:8px;background:var(--concrete);border:1px solid var(--line);}
+.perm-table td{padding:8px;border:1px solid var(--line);text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- FIREBASE SETUP SCREEN -->
+<div id="fbSetupScreen">
+  <div class="fb-logo">🔥</div>
+  <div class="fb-title">ربط Firebase</div>
+  <div class="fb-sub">للعمل على أكثر من جهاز في آن واحد</div>
+  <div class="fb-box">
+    <h3>إعداد قاعدة البيانات السحابية</h3>
+    <p>أنشئ مشروع Firebase مجاني ثم الصق بيانات الإعداد أدناه. يكفي مرة واحدة فقط، وتُحفظ تلقائياً.</p>
+    <div class="fb-steps">
+      <strong>خطوات سريعة:</strong><br>
+      1. افتح <strong>console.firebase.google.com</strong><br>
+      2. أنشئ مشروعاً جديداً<br>
+      3. اضغط "إضافة تطبيق ويب" ثم انسخ الـ Config<br>
+      4. فعّل <strong>Authentication → Email/Password</strong><br>
+      5. فعّل <strong>Firestore Database</strong>
+    </div>
+    <span class="lbl">API Key</span>
+    <input class="fi" type="text" id="fbApiKey" placeholder="AIzaSy...">
+    <span class="lbl">Auth Domain</span>
+    <input class="fi" type="text" id="fbAuthDomain" placeholder="project-id.firebaseapp.com">
+    <span class="lbl">Project ID</span>
+    <input class="fi" type="text" id="fbProjectId" placeholder="my-project-id">
+    <div class="fb-field-grid">
+      <div>
+        <span class="lbl">Storage Bucket</span>
+        <input class="fi" type="text" id="fbStorageBucket" placeholder="project.appspot.com">
+      </div>
+      <div>
+        <span class="lbl">Messaging Sender ID</span>
+        <input class="fi" type="text" id="fbMessagingSenderId" placeholder="123456789">
+      </div>
+    </div>
+    <span class="lbl">App ID</span>
+    <input class="fi" type="text" id="fbAppId" placeholder="1:123456:web:abc123">
+    <button class="fb-connect-btn" id="fbConnectBtn" onclick="connectFirebase()">🔌 اتصال وحفظ الإعداد</button>
+    <div class="fb-err" id="fbErr">⚠️ تحقق من البيانات وحاول مجدداً</div>
+    <div class="fb-ok" id="fbOk">✅ تم الاتصال بنجاح! جارٍ الانتقال...</div>
+    <div style="margin-top:14px;padding:12px;background:#E8F5EE;border-radius:10px;font-size:11px;color:#1E7A4A;line-height:1.9;">
+      <strong>📌 ملاحظة - Firestore Rules:</strong><br>
+      في Firebase Console → Firestore → Rules، اضبطها على:<br>
+      <code style="background:#fff;padding:2px 6px;border-radius:4px;font-size:10px;">allow read, write: if request.auth != null;</code>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-logo">🏗️</div>
+  <div class="login-title">نظام التقارير اليومية</div>
+  <div class="login-mgr">بإشراف م/ محمد عبد القوي</div>
+  <div class="login-box">
+    <h3 id="loginBoxTitle">تسجيل الدخول</h3>
+    <span class="lbl">اسم المستخدم</span>
+    <input class="fi" type="text" id="userInp" placeholder="أدخل اسم المستخدم">
+    <!-- First-run full name field -->
+    <div id="firstRunFields" style="display:none;">
+      <span class="lbl">الاسم الكامل</span>
+      <input class="fi" type="text" id="firstRunFullName" placeholder="م/ محمد عبد القوي">
+    </div>
+    <span class="lbl">كلمة المرور</span>
+    <input class="fi" type="password" id="passInp" placeholder="••••••••">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">دخول للنظام</button>
+    <div class="login-err" id="loginErr">خطأ في البيانات، يرجى المحاولة مرة أخرى</div>
+    <div style="margin-top:14px;border-top:1px solid #eee;padding-top:12px;text-align:center;">
+      <button id="firstRunToggle" onclick="toggleFirstRun()" style="width:100%;padding:11px;background:#F0EDE8;border:1.5px dashed #C0A060;border-radius:10px;color:#8B6914;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">⭐ أول مرة؟ إنشاء حساب المدير</button>
+    </div>
+    <div style="margin-top:8px;text-align:center;">
+      <button onclick="resetFirebaseConfig()" style="background:none;border:none;color:#aaa;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;text-decoration:underline;">⚙️ تغيير إعداد Firebase</button>
+    </div>
+  </div>
+  <div style="margin-top:24px;color:rgba(255,255,255,.5);font-size:10px;">جميع الحقوق محفوظة © 2026</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="u-av" id="uAv" style="background:var(--amber);">👤</div>
+      <div>
+        <div class="topbar-name" id="uName">م/ محمد عبد القوي</div>
+        <div class="topbar-role" id="uRole">مدير المشروع</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">خروج</button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showView('report',this)"><span class="ti">📝</span>تقريري</button>
+    <button class="tab-btn" onclick="showView('store',this)"><span class="ti">📦</span>المخزن</button>
+    <button class="tab-btn" id="mergeTab" onclick="showView('merge',this)" style="display:none;"><span class="ti">📬</span>الدمج <span class="nbadge" id="inboxBadge">0</span></button>
+    <button class="tab-btn" id="usersTab" onclick="showView('users',this)" style="display:none;"><span class="ti">👥</span>المستخدمين</button>
+    <button class="tab-btn" onclick="showView('perms',this)"><span class="ti">🔐</span>صلاحياتي</button>
+  </div>
+
+  <!-- REPORT VIEW -->
+  <div class="app-view active" id="app-report">
+    <div class="steps-nav" id="stepsNav">
+      <button class="step-btn active" onclick="showStep(1)">1. المعلومات</button>
+      <button class="step-btn" onclick="showStep(2)">2. الأعمال</button>
+      <button class="step-btn" onclick="showStep(3)">3. العمالة</button>
+      <button class="step-btn" onclick="showStep(4)">4. المشكلات</button>
+      <button class="step-btn" onclick="showStep(5)">5. مراجعة</button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="pFill" style="width:20%"></div></div>
+
+    <!-- STEP 1: INFO -->
+    <div class="section active" id="step1">
+      <div class="card">
+        <div class="card-title"><div class="icon">🏗️</div>بيانات المشروع</div>
+        <span class="lbl">اسم المشروع</span>
+        <input class="fi" type="text" id="projName" value="مشروع إنشاء مجمع سكني - المرحلة أ">
+        <div class="row-2">
+          <div><span class="lbl">كود المشروع</span><input class="fi" type="text" id="projCode" value="PRJ-2026-001"></div>
+          <div><span class="lbl">رقم التقرير</span><input class="fi" type="number" id="reportNum" value="142"></div>
+        </div>
+        <span class="lbl">المالك</span>
+        <input class="fi" type="text" id="owner" value="شركة التطوير العقاري">
+        <span class="lbl">المقاول الرئيسي</span>
+        <input class="fi" type="text" id="contractor" value="شركة المقاولات المتحدة">
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon">📅</div>التوقيت والجدول</div>
+        <span class="lbl">تاريخ التقرير</span>
+        <input class="fi" type="date" id="reportDate">
+        <div class="row-2">
+          <div><span class="lbl">يوم العمل</span><input class="fi" type="number" id="workDay" value="215"></div>
+          <div><span class="lbl">تاريخ البدء</span><input class="fi" type="date" id="startDate" value="2025-11-20"></div>
+        </div>
+        <div class="row-2">
+          <div><span class="lbl">انتهاء العقد</span><input class="fi" type="date" id="contractEndDate" value="2026-12-30"></div>
+          <div><span class="lbl">الانتهاء المعدل</span><input class="fi" type="date" id="revisedEndDate" value="2027-02-15"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: WORKS -->
+    <div class="section" id="step2">
+      <div class="card">
+        <div class="card-title"><div class="icon">🔨</div>الأعمال المنفذة اليوم</div>
+        <span class="lbl">وصف الأعمال الرئيسية</span>
+        <textarea class="fi" id="mainWorks" rows="6" placeholder="اكتب تفاصيل ما تم إنجازه اليوم..."></textarea>
+        <div class="row-2">
+          <div><span class="lbl">نسبة الإنجاز %</span><input class="fi" type="number" id="progress" placeholder="0"></div>
+          <div><span class="lbl">الطابق / المنطقة</span><input class="fi" type="text" id="floor" placeholder="مثلاً: الطابق الثالث"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon">📅</div>خطة الغد</div>
+        <textarea class="fi" id="tomorrow" rows="3" placeholder="الأعمال المخطط لها غداً..."></textarea>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon">🌤️</div>حالة الطقس</div>
+        <div class="weather-grid">
+          <div class="weather-pill" onclick="setWX('مشمس',this)"><span class="em">☀️</span><span class="wl">مشمس</span></div>
+          <div class="weather-pill selected" onclick="setWX('غائم جزئياً',this)"><span class="em">⛅</span><span class="wl">غائم</span></div>
+          <div class="weather-pill" onclick="setWX('ممطر',this)"><span class="em">🌧️</span><span class="wl">ممطر</span></div>
+          <div class="weather-pill" onclick="setWX('رياح/غبار',this)"><span class="em">💨</span><span class="wl">غبار</span></div>
+        </div>
+        <div class="row-2" style="margin-top:10px;">
+          <div><span class="lbl">الحرارة العظمى</span><input class="fi" type="number" id="tempMax" value="38"></div>
+          <div><span class="lbl">الحرارة الصغرى</span><input class="fi" type="number" id="tempMin" value="24"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: WORKERS -->
+    <div class="section" id="step3">
+      <div class="info-chip">💡 الإجمالي التلقائي: <span id="totalWorkers">0</span> عامل</div>
+      
+      <div class="card">
+        <div class="card-title"><div class="icon" style="background:var(--amber-light);">🏗️</div>مقاولين الباطن</div>
+        <div id="subContractors"></div>
+        <button class="add-btn" onclick="addSubContractor()">+ إضافة مقاول باطن جديد</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="icon" style="background:var(--green-light);">👷</div>العمالة الذاتية (دائمة)</div>
+        <div class="col-hdr-row"><span>التخصص</span><span>العدد</span><span>ساعات</span><span></span></div>
+        <div id="permanentList"></div>
+        <button class="add-btn" onclick="addPermanentRow()">+ إضافة تخصص</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="icon" style="background:#E1F5FE;">🤝</div>العمالة الخارجية / اليومية</div>
+        <div class="col-hdr-row"><span>التخصص</span><span>العدد</span><span>ساعات</span><span></span></div>
+        <div id="externalList"></div>
+        <button class="add-btn" onclick="addExternalRow()">+ إضافة تخصص</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: ISSUES -->
+    <div class="section" id="step4">
+      <div class="card">
+        <div class="card-title"><div class="icon">⚠️</div>رصد المشكلات والعوائق</div>
+        <span class="lbl">وصف المشكلة</span>
+        <textarea class="fi" id="newIssue" placeholder="اكتب المشكلة هنا..."></textarea>
+        <span class="lbl">الأولوية</span>
+        <select class="fi" id="issuePriority">
+          <option value="منخفضة">🟢 منخفضة</option>
+          <option value="متوسطة">🟡 متوسطة</option>
+          <option value="عالية">🔴 عالية</option>
+        </select>
+        <button class="add-btn" onclick="addIssue()" style="background:var(--steel);color:#fff;border:none;">إضافة المشكلة للقائمة</button>
+      </div>
+      <div id="issuesList"></div>
+      
+      <div class="card">
+        <div class="card-title"><div class="icon">📸</div>الصور الميدانية</div>
+        <div id="photoGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"></div>
+        <input type="file" id="photoInp" multiple accept="image/*" style="display:none" onchange="handlePhotos(event)">
+        <button class="add-btn" onclick="document.getElementById('photoInp').click()">📸 إضافة صور من المعرض أو الكاميرا</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: SUMMARY -->
+    <div class="section" id="step5">
+      <div class="sum-box">
+        <h3>📊 ملخص التقرير</h3>
+        <div class="sum-row"><span class="sl">المشروع</span><span class="sv" id="s-proj">—</span></div>
+        <div class="sum-row"><span class="sl">المالك</span><span class="sv" id="s-owner">—</span></div>
+        <div class="sum-row"><span class="sl">التاريخ</span><span class="sv" id="s-date">—</span></div>
+        <div class="sum-row"><span class="sl">المهندس</span><span class="sv" id="s-eng">—</span></div>
+        <div class="sum-row"><span class="sl">إجمالي العمالة</span><span class="sv" id="s-workers">0</span></div>
+        <div class="sum-row"><span class="sl">نسبة الإنجاز</span><span class="sv" id="s-progress">0%</span></div>
+      </div>
+      <button class="save-btn" id="submitBtn" onclick="submitReport()" style="background:var(--steel);margin-bottom:10px;">💾 حفظ التقرير كمسودة</button>
+      <button class="save-btn" id="sendBtn" onclick="sendReport()">📤 إرسال التقرير للمدير</button>
+      <div id="mgrActions" style="display:none;margin-top:10px;">
+        <div class="row-2">
+          <button class="save-btn" style="background:var(--green);" onclick="approveReport()">✅ اعتماد</button>
+          <button class="save-btn" style="background:var(--rust);" onclick="rejectReport()">🔄 إعادة</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="btn-sec" id="prevBtn" onclick="prevStep()" disabled>السابق</button>
+      <button class="btn-pri" id="nextBtn" onclick="nextStep()">التالي</button>
+    </div>
+  </div>
+
+  <!-- STORE VIEW -->
+  <div class="app-view" id="app-store">
+    <div class="store-hdr">
+      <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">🏗️</span><div><div style="font-size:13px;font-weight:700;">مخزن الموقع</div><div style="font-size:10px;opacity:.7;">إدارة المواد والمهمات</div></div></div>
+    </div>
+    <div class="store-tabs">
+      <div class="store-tab active" onclick="storeTab('incoming',event)">📥 الوارد</div>
+      <div class="store-tab" onclick="storeTab('outgoing',event)">📤 المنصرف</div>
+      <div class="store-tab" onclick="storeTab('summary',event)">📊 الملخص</div>
+    </div>
+    <div class="store-sec active" id="store-incoming">
+      <div class="card" style="margin-top:13px;">
+        <div class="card-title"><div class="icon" style="background:var(--green-light);">📦</div>المواد الواردة</div>
+        <div class="mat-row mat-in" style="margin-bottom:4px;"><span class="col-hdr">المادة</span><span class="col-hdr">الكمية</span><span class="col-hdr">الوحدة</span><span></span></div>
+        <div id="incomingList"></div>
+        <button class="add-btn" onclick="addInRow()">+ إضافة مادة واردة</button>
+        <span class="lbl">المورد / رقم الأمر</span><input class="fi" type="text" id="supplierName" placeholder="اسم المورد">
+        <span class="lbl">ملاحظات</span><textarea class="fi" id="inNotes" placeholder="ملاحظات..."></textarea>
+      </div>
+    </div>
+    <div class="store-sec" id="store-outgoing">
+      <div class="card" style="margin-top:13px;">
+        <div class="card-title"><div class="icon" style="background:#FDE8E6;">📤</div>المواد المنصرفة</div>
+        <div class="mat-row mat-out" style="margin-bottom:4px;"><span class="col-hdr">المادة</span><span class="col-hdr">الكمية</span><span class="col-hdr">الوحدة</span><span class="col-hdr">بند التنفيذ</span><span></span></div>
+        <div id="outgoingList"></div>
+        <button class="add-btn" onclick="addOutRow()">+ إضافة مادة منصرفة</button>
+      </div>
+    </div>
+    <div class="store-sec" id="store-summary">
+      <div style="padding-top:13px;">
+        <div class="store-sum-box">
+          <h3>📊 ملخص المخزن</h3>
+          <div class="ss-row"><span class="sl">الوارد</span><span class="sv" id="ss-in">—</span></div>
+          <div class="ss-row"><span class="sl">المنصرف</span><span class="sv" id="ss-out">—</span></div>
+          <div class="ss-row"><span class="sl">المورد</span><span class="sv" id="ss-sup">—</span></div>
+        </div>
+        <div id="ss-in-list-card" class="card"><div class="card-title">تفاصيل الوارد</div><div id="ss-in-list"></div></div>
+        <button class="save-btn" onclick="saveStore()">💾 حفظ سجل المخزن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MERGE VIEW -->
+  <div class="app-view" id="app-merge">
+    <div class="merge-hero"><h2>📬 صندوق الدمج</h2><p>استلام تقارير الفريق ودمجها في تقرير يومي موحد</p></div>
+    <div class="merge-wrap">
+      <div class="overview-card">
+        <h3>📊 حالة التقارير الواردة</h3>
+        <div id="ovList"></div>
+        <div class="mp-bar"><div class="mp-fill" id="mpFill" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mid);"><span id="mpCount">0 من 0</span><span id="mpPct">0%</span></div>
+      </div>
+      <button class="gen-btn" id="genBtn" onclick="generateMerged()" disabled>🔀 دمج التقارير المحددة وإنشاء التقرير الموحد</button>
+      <div id="inboxList"></div>
+      <div id="mergedOut" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- USERS VIEW -->
+  <div class="app-view" id="app-users">
+    <div class="um-hero"><h2>👥 إدارة المستخدمين</h2><p>إضافة وتعديل وإدارة صلاحيات فريق العمل</p></div>
+    <div class="um-wrap">
+      <button class="new-user-btn" onclick="openUserModal()">➕ إضافة مستخدم جديد</button>
+      <div id="usersList"></div>
+    </div>
+  </div>
+
+  <!-- PERMS VIEW -->
+  <div class="app-view" id="app-perms">
+    <div style="padding:13px;">
+      <div class="card">
+        <div class="card-title"><div class="icon">🔐</div>جدول الصلاحيات العام</div>
+        <table class="perm-table" id="permTable"></table>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon">👤</div>صلاحياتك الحالية</div>
+        <div id="myPerms" style="font-size:13px;line-height:2.1;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <h3 id="modalTitle">إضافة مستخدم جديد</h3>
+    <span class="lbl">الاسم الكامل</span>
+    <input class="fi" type="text" id="mFullName">
+    <span class="lbl">اسم المستخدم</span>
+    <input class="fi" type="text" id="mUser">
+    <span class="lbl">كلمة المرور</span>
+    <input class="fi" type="text" id="mPass">
+    <span class="lbl">الدور الوظيفي</span>
+    <select class="fi" id="mRole" onchange="applyDefaultPerms()">
+      <option value="manager">👑 مدير مشروع</option>
+      <option value="eng">👷 مهندس تنفيذ</option>
+      <option value="tech">📐 مهندس مكتب فني</option>
+      <option value="super">🦺 مشرف موقع</option>
+      <option value="accountant">💼 محاسب</option>
+    </select>
+    <div id="mPermsList" style="margin-top:15px;">
+      <span class="lbl">الصلاحيات المخصصة</span>
+      <!-- Perms checkboxes will be injected here -->
+    </div>
+    <div class="row-2" style="margin-top:20px;">
+      <button class="btn-sec" onclick="closeUserModal()">إلغاء</button>
+      <button class="btn-pri" onclick="saveUser()">حفظ المستخدم</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF TARGET -->
+<div id="pdfTarget" style="display:none;"></div>
+
+<script>
+// ══ FIREBASE SETUP ══
+function connectFirebase() {
+  const cfg = {
+    apiKey:            document.getElementById('fbApiKey').value.trim(),
+    authDomain:        document.getElementById('fbAuthDomain').value.trim(),
+    projectId:         document.getElementById('fbProjectId').value.trim(),
+    storageBucket:     document.getElementById('fbStorageBucket').value.trim(),
+    messagingSenderId: document.getElementById('fbMessagingSenderId').value.trim(),
+    appId:             document.getElementById('fbAppId').value.trim(),
+  };
+  if(!cfg.apiKey || !cfg.projectId) {
+    document.getElementById('fbErr').style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('fbConnectBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جارٍ الاتصال...';
+
+  const ok = window.initFirebase(cfg);
+  if(ok) {
+    localStorage.setItem('fb_config', JSON.stringify(cfg));
+    document.getElementById('fbErr').style.display = 'none';
+    document.getElementById('fbOk').style.display = 'block';
+    setTimeout(() => showLoginScreen(), 1200);
+  } else {
+    document.getElementById('fbErr').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '🔌 اتصال وحفظ الإعداد';
+  }
+}
+
+function showLoginScreen() {
+  document.getElementById('fbSetupScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// On page load: check if Firebase already configured
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('fb_config');
+  if(saved) {
+    try {
+      const cfg = JSON.parse(saved);
+      const ok = window.initFirebase(cfg);
+      if(ok) {
+        // Fill fields with saved values (for re-entry if needed)
+        document.getElementById('fbApiKey').value = cfg.apiKey || '';
+        document.getElementById('fbAuthDomain').value = cfg.authDomain || '';
+        document.getElementById('fbProjectId').value = cfg.projectId || '';
+        document.getElementById('fbStorageBucket').value = cfg.storageBucket || '';
+        document.getElementById('fbMessagingSenderId').value = cfg.messagingSenderId || '';
+        document.getElementById('fbAppId').value = cfg.appId || '';
+        // Listen to auth state
+        listenAuth();
+        showLoginScreen();
+        return;
+      }
+    } catch(e) {}
+  }
+  // Show Firebase setup
+  document.getElementById('fbSetupScreen').style.display = 'flex';
+  document.getElementById('loginScreen').style.display = 'none';
+});
+
+function listenAuth() {
+  window._auth.onAuthStateChanged(async (firebaseUser) => {
+    const btn = document.getElementById('loginBtn');
+    if(btn) { btn.textContent = isFirstRun ? 'إنشاء الحساب والدخول' : 'دخول للنظام'; btn.disabled = false; }
+
+    if(firebaseUser) {
+      try {
+        const snap = await window._db.collection('users').doc(firebaseUser.uid).get();
+        if(snap.exists) {
+          cu = { uid: firebaseUser.uid, email: firebaseUser.email, ...snap.data() };
+          if(!cu.active) { showToast('⚠️ هذا الحساب معطل'); doLogout(); return; }
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+          setupApp();
+          showToast('أهلاً بك، ' + cu.fullName);
+        }
+      } catch(e) {
+        console.error('Error fetching user:', e);
+      }
+    }
+  });
+}
+
+// ══ DATA & CONFIG ══
+const ALL_PERMS = [
+  {key:'editReport',   label:'تعديل التقرير'},
+  {key:'sendReport',   label:'إرسال التقرير للمدير'},
+  {key:'approveReport',label:'اعتماد / رفض التقرير'},
+  {key:'mergeReports', label:'دمج التقارير'},
+  {key:'storeIn',      label:'إدخال المواد الواردة'},
+  {key:'storeOut',     label:'إدخال المواد المنصرفة'},
+  {key:'approveOut',   label:'اعتماد صرف المخزن'},
+  {key:'saveStore',    label:'حفظ سجل المخزن'},
+  {key:'manageUsers',  label:'إدارة المستخدمين'},
+];
+
+const DEFAULT_PERMS = {
+  manager:    {editReport:true,sendReport:true,approveReport:true,mergeReports:true,storeIn:true,storeOut:true,approveOut:true,saveStore:true,manageUsers:true},
+  eng:        {editReport:true,sendReport:true,approveReport:false,mergeReports:false,storeIn:true,storeOut:true,approveOut:false,saveStore:true,manageUsers:false},
+  tech:       {editReport:true,sendReport:true,approveReport:false,mergeReports:false,storeIn:true,storeOut:true,approveOut:false,saveStore:true,manageUsers:false},
+  super:      {editReport:true,sendReport:true,approveReport:false,mergeReports:false,storeIn:true,storeOut:true,approveOut:false,saveStore:true,manageUsers:false},
+  accountant: {editReport:false,sendReport:true,approveReport:false,mergeReports:false,storeIn:true,storeOut:false,approveOut:true,saveStore:true,manageUsers:false},
+};
+
+const ROLE_LABELS = {manager:'👑 مدير المشروع',eng:'👷 مهندس تنفيذ',tech:'📐 مهندس مكتب فني',super:'🦺 مشرف موقع',accountant:'💼 محاسب'};
+const ROLE_COLORS = {manager:'#7B2FBE',eng:'#1565C0',tech:'#0E7C6B',super:'#C25000',accountant:'#5A6A77'};
+
+let users = []; // Loaded from Firestore
+
+let cu = null; // Current User
+let currentStep = 1;
+let wxVal = 'غائم جزئياً';
+let issues = [];
+let editUserId = null;
+
+// Inbox for merging
+let inbox = [
+  {id:101,from:'م/ أحمد علي',role:'eng',label:'مهندس تنفيذ',color:'#1565C0',initials:'مه',time:'08:42 ص',selected:false,
+   sections:['أعمال','عمالة','مشكلات'],
+   data:{works:'- صب خرسانة بلاطة الطابق الثالث (80 م²)\n- تركيب حديد أعمدة الطابق الرابع',
+    workers:[{spec:'حدادون',count:8,hours:10},{spec:'نجارون',count:6,hours:10}],
+    progress:'45',floor:'الطابق 3',issues:[{text:'تأخر وصول الخلاطة',priority:'متوسطة'}],
+    tomorrow:'الاستمرار في حديد الطابق الرابع',weather:'☀️ مشمس',tempMax:'40',tempMin:'25'}},
+  {id:102,from:'م/ سارة حسن',role:'super',label:'مشرف موقع',color:'#C25000',initials:'مش',time:'09:15 ص',selected:false,
+   sections:['أعمال','عمالة'],
+   data:{works:'- متابعة أعمال العزل في القبو\n- تنظيف الموقع العام',
+    workers:[{spec:'عمال عزل',count:4,hours:8},{spec:'عمال نظافة',count:10,hours:8}],
+    progress:'90',floor:'القبو',issues:[],
+    tomorrow:'بدء الردم حول القبو',weather:'☀️ مشمس',tempMax:'40',tempMin:'25'}}
+];
+
+let isFirstRun = false;
+
+function toggleFirstRun() {
+  isFirstRun = !isFirstRun;
+  document.getElementById('firstRunFields').style.display = isFirstRun ? 'block' : 'none';
+  document.getElementById('loginBoxTitle').textContent = isFirstRun ? 'إنشاء حساب المدير' : 'تسجيل الدخول';
+  document.getElementById('loginBtn').textContent = isFirstRun ? 'إنشاء الحساب والدخول' : 'دخول للنظام';
+  document.getElementById('firstRunToggle').textContent = isFirstRun ? 'العودة لتسجيل الدخول' : 'أول مرة؟ إنشاء حساب المدير';
+  document.getElementById('loginErr').style.display = 'none';
+}
+
+// ══ AUTH FUNCTIONS ══
+async function doLogin() {
+  if(!window._fbReady) { showToast('⚠️ Firebase غير متصل'); return; }
+  const username = document.getElementById('userInp').value.trim();
+  const pass = document.getElementById('passInp').value;
+  if(!username || !pass) return;
+
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = '⏳ جارٍ...';
+  btn.disabled = true;
+
+  try {
+    if(isFirstRun) {
+      // Register manager account (first run)
+      const fullName = document.getElementById('firstRunFullName').value.trim() || username;
+      const email = username.replace(/\s+/g,'').toLowerCase() + '@site-report.app';
+      const cred = await window._auth.createUserWithEmailAndPassword(email, pass);
+      await window._db.collection('users').doc(cred.user.uid).set({
+        fullName, username, email, role: 'manager',
+        perms: {...DEFAULT_PERMS.manager}, active: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // onAuthStateChanged will handle the rest
+      return;
+    }
+
+    // Normal login: find user doc by username
+    const snap = await window._db.collection('users').where('username','==', username).get();
+    if(snap.empty) throw new Error('user not found');
+    const userData = snap.docs[0].data();
+    await window._auth.signInWithEmailAndPassword(userData.email, pass);
+    // onAuthStateChanged handles rest
+
+  } catch(e) {
+    console.error('Login error:', e);
+    document.getElementById('loginErr').style.display = 'block';
+    btn.textContent = isFirstRun ? 'إنشاء الحساب والدخول' : 'دخول للنظام';
+    btn.disabled = false;
+  }
+}
+
+async function doLogout() {
+  await window._auth.signOut();
+  cu = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginErr').style.display = 'none';
+  document.getElementById('userInp').value = '';
+  document.getElementById('passInp').value = '';
+}
+
+function setupApp() {
+  document.getElementById('uName').textContent = cu.fullName;
+  document.getElementById('uRole').textContent = ROLE_LABELS[cu.role];
+  document.getElementById('uAv').style.background = ROLE_COLORS[cu.role];
+  
+  // Tabs visibility
+  document.getElementById('mergeTab').style.display = cu.perms.mergeReports ? 'flex' : 'none';
+  document.getElementById('usersTab').style.display = cu.perms.manageUsers ? 'flex' : 'none';
+  
+  // Set Date
+  document.getElementById('reportDate').valueAsDate = new Date();
+  
+  initSubContractors();
+  renderUsers();
+  renderPermsTable();
+  renderMyPerms();
+
+  // Live inbox listener from Firestore
+  if(window._fbReady) {
+    window._db.collection('reports').onSnapshot(snap => {
+      inbox = snap.docs
+        .filter(d => d.data().status === 'sent' && d.data().uid !== cu.uid)
+        .map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            from: data.engName || data.fullName || 'مجهول',
+            role: data.role || 'eng',
+            label: ROLE_LABELS[data.role] || '',
+            color: ROLE_COLORS[data.role] || '#5A6A77',
+            initials: (data.engName || 'م').substring(0,2),
+            time: data.sentAt ? new Date(data.sentAt.seconds*1000).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}) : '—',
+            selected: false,
+            data: { works: data.mainWorks || '' }
+          };
+        });
+      renderMerge();
+    });
+  } else {
+    renderMerge();
+  }
+}
+
+// ══ NAVIGATION ══
+function showView(v, btn) {
+  document.querySelectorAll('.app-view').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+  document.getElementById('app-' + v).classList.add('active');
+  btn.classList.add('active');
+  if(v === 'merge') renderMerge();
+}
+
+function showStep(s) {
+  document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.step-btn').forEach(x => x.classList.remove('active'));
+  document.getElementById('step' + s).classList.add('active');
+  document.querySelectorAll('.step-btn')[s-1].classList.add('active');
+  currentStep = s;
+  document.getElementById('pFill').style.width = (s * 20) + '%';
+  
+  document.getElementById('prevBtn').disabled = s === 1;
+  document.getElementById('nextBtn').textContent = s === 5 ? 'إرسال التقرير' : 'التالي';
+  
+  if(s === 5) buildSummary();
+}
+
+function nextStep() {
+  if(currentStep < 5) showStep(currentStep + 1);
+  else sendReport();
+}
+
+function prevStep() {
+  if(currentStep > 1) showStep(currentStep - 1);
+}
+
+// ══ REPORT LOGIC ══
+function setWX(v, el) {
+  wxVal = v;
+  document.querySelectorAll('.weather-pill').forEach(x => x.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function addIssue() {
+  const txt = document.getElementById('newIssue').value.trim();
+  if(!txt) return;
+  issues.push({text: txt, priority: document.getElementById('issuePriority').value});
+  renderIssues();
+  document.getElementById('newIssue').value = '';
+}
+
+function renderIssues() {
+  const c = document.getElementById('issuesList');
+  c.innerHTML = issues.map((iss, i) => `
+    <div style="background:#fff; border-radius:10px; padding:10px; margin-bottom:8px; border-right:4px solid ${iss.priority==='عالية'?'var(--rust)':iss.priority==='متوسطة'?'var(--amber)':'var(--green)'}; display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-size:12px;"><strong>${iss.priority}:</strong> ${iss.text}</div>
+      <button onclick="issues.splice(${i},1);renderIssues()" style="border:none; background:none; color:var(--rust); cursor:pointer;">✕</button>
+    </div>
+  `).join('');
+}
+
+function handlePhotos(e) {
+  Array.from(e.target.files).forEach(f => {
+    const r = new FileReader();
+    r.onload = ev => {
+      const div = document.createElement('div');
+      div.style.cssText = `aspect-ratio:1; border-radius:10px; background:url(${ev.target.result}) center/cover; position:relative;`;
+      div.innerHTML = `<div style="position:absolute; top:-5px; left:-5px; width:20px; height:20px; background:var(--rust); color:#fff; border-radius:50%; font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="this.parentElement.remove()">✕</div>`;
+      document.getElementById('photoGrid').appendChild(div);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function buildSummary() {
+  document.getElementById('s-proj').textContent = document.getElementById('projName').value || '—';
+  document.getElementById('s-owner').textContent = document.getElementById('owner').value || '—';
+  document.getElementById('s-date').textContent = document.getElementById('reportDate').value || '—';
+  document.getElementById('s-eng').textContent = cu.fullName;
+  document.getElementById('s-workers').textContent = document.getElementById('totalWorkers').textContent + ' عامل';
+  document.getElementById('s-progress').textContent = (document.getElementById('progress').value || '0') + '%';
+}
+
+function collectReportData(status) {
+  return {
+    uid: cu.uid,
+    engName: cu.fullName,
+    role: cu.role,
+    status,
+    projName:      document.getElementById('projName').value,
+    projCode:      document.getElementById('projCode').value,
+    reportNum:     document.getElementById('reportNum').value,
+    owner:         document.getElementById('owner').value,
+    contractor:    document.getElementById('contractor').value,
+    reportDate:    document.getElementById('reportDate').value,
+    workDay:       document.getElementById('workDay').value,
+    mainWorks:     document.getElementById('mainWorks').value,
+    progress:      document.getElementById('progress').value,
+    floor:         document.getElementById('floor').value,
+    tomorrow:      document.getElementById('tomorrow').value,
+    weather:       wxVal,
+    tempMax:       document.getElementById('tempMax').value,
+    tempMin:       document.getElementById('tempMin').value,
+    issues,
+    totalWorkers:  document.getElementById('totalWorkers').textContent,
+    savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
+async function sendReport() {
+  if(!window._fbReady) { showToast('⚠️ Firebase غير متصل'); return; }
+  const data = collectReportData('sent');
+  data.sentAt = firebase.firestore.FieldValue.serverTimestamp();
+  const docId = cu.uid + '_' + document.getElementById('reportDate').value;
+  await window._db.collection('reports').doc(docId).set(data);
+  showToast('📤 تم إرسال التقرير بنجاح للمدير');
+}
+
+async function submitReport() {
+  if(!window._fbReady) { showToast('⚠️ Firebase غير متصل'); return; }
+  const data = collectReportData('draft');
+  const docId = cu.uid + '_' + document.getElementById('reportDate').value + '_draft';
+  await window._db.collection('reports').doc(docId).set(data);
+  showToast('💾 تم حفظ المسودة بنجاح');
+}
+
+// ══ WORKERS LOGIC ══
+function initSubContractors() {
+  const scs = [
+    {id:'sc1', name:'مقاول خرسانة', color:'#7B2FBE', trades:['نجار','حداد']},
+    {id:'sc2', name:'مقاول مباني', color:'#1565C0', trades:['بناء','عامل']},
+  ];
+  const container = document.getElementById('subContractors');
+  container.innerHTML = '';
+  scs.forEach(sc => {
+    const div = document.createElement('div');
+    div.className = 'sc-block';
+    div.innerHTML = `
+      <div class="sc-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display==='none'?'block':'none'">
+        <h4><span style="width:8px;height:8px;border-radius:50%;background:${sc.color};display:inline-block;"></span> ${sc.name}</h4>
+        <span style="font-size:10px;color:var(--mid);">▼</span>
+      </div>
+      <div class="sc-body" style="display:none;">
+        <div id="sc-list-${sc.id}">
+          ${sc.trades.map(t => `<div class="wk-row"><input class="fi" value="${t}"><input class="fi" type="number" oninput="calcTotal()" placeholder="0"><input class="fi" type="number" placeholder="0"><button class="del-row" onclick="this.parentElement.remove();calcTotal()">✕</button></div>`).join('')}
+        </div>
+        <button class="add-btn" onclick="addWkRow('sc-list-${sc.id}')">+ إضافة تخصص</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function addWkRow(id) {
+  const r = document.createElement('div');
+  r.className = 'wk-row';
+  r.innerHTML = `<input class="fi" placeholder="التخصص"><input class="fi" type="number" oninput="calcTotal()" placeholder="0"><input class="fi" type="number" placeholder="0"><button class="del-row" onclick="this.parentElement.remove();calcTotal()">✕</button>`;
+  document.getElementById(id).appendChild(r);
+}
+
+function addPermanentRow() { addWkRow('permanentList'); }
+function addExternalRow() { addWkRow('externalList'); }
+
+function calcTotal() {
+  let t = 0;
+  document.querySelectorAll('input[type="number"]').forEach(inp => {
+    if(inp.placeholder === '0') t += parseInt(inp.value) || 0;
+  });
+  document.getElementById('totalWorkers').textContent = t;
+}
+
+// ══ STORE LOGIC ══
+function storeTab(t, e) {
+  document.querySelectorAll('.store-tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.store-sec').forEach(x => x.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  document.getElementById('store-' + t).classList.add('active');
+}
+
+function addInRow() {
+  const r = document.createElement('div');
+  r.className = 'mat-row mat-in';
+  r.innerHTML = `<input class="fi" placeholder="المادة"><input class="fi" type="number" placeholder="0"><select class="fi"><option>طن</option><option>م³</option><option>كيس</option></select><button class="del-row" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('incomingList').appendChild(r);
+}
+
+function addOutRow() {
+  const r = document.createElement('div');
+  r.className = 'mat-row mat-out';
+  r.innerHTML = `<input class="fi" placeholder="المادة"><input class="fi" type="number" placeholder="0"><select class="fi"><option>طن</option><option>م³</option></select><input class="fi" placeholder="البند"><button class="del-row" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('outgoingList').appendChild(r);
+}
+
+function saveStore() { showToast('💾 تم حفظ بيانات المخزن'); }
+
+// ══ MERGE LOGIC ══
+function renderMerge() {
+  const sel = inbox.filter(r => r.selected).length, total = inbox.length;
+  document.getElementById('inboxBadge').textContent = total;
+  document.getElementById('mpFill').style.width = (total > 0 ? (sel/total*100) : 0) + '%';
+  document.getElementById('mpCount').textContent = `${sel} من ${total} تقارير محددة`;
+  document.getElementById('mpPct').textContent = Math.round(total > 0 ? (sel/total*100) : 0) + '%';
+  document.getElementById('genBtn').disabled = sel === 0;
+  
+  document.getElementById('ovList').innerHTML = inbox.map(r => `
+    <div class="ov-row">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="ov-av" style="background:${r.color};">${r.initials}</div>
+        <div><div style="font-size:12px;font-weight:700;">${r.from}</div><div style="font-size:10px;color:var(--mid);">${r.label}</div></div>
+      </div>
+      <span class="ov-badge ${r.selected?'ob-done':'ob-wait'}">${r.selected?'✅ محدد':'⏳ لم يُحدد'}</span>
+    </div>`).join('');
+    
+  document.getElementById('inboxList').innerHTML = inbox.map(r => `
+    <div class="inbox-item ${r.selected?'is-merged':''}">
+      <div class="ib-top">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="ib-av" style="background:${r.color};">${r.initials}</div>
+          <div><div style="font-size:13px;font-weight:700;">${r.from}</div><div style="font-size:10px;color:var(--mid);">${r.label}</div></div>
+        </div>
+        <span style="font-size:10px;color:var(--mid);">🕐 ${r.time}</span>
+      </div>
+      <div class="ib-preview">🔨 ${r.data.works.split('\n')[0]}...</div>
+      <div class="ib-actions">
+        <button class="ib-view-btn" onclick="alert('عرض تفاصيل تقرير ${r.from}')">👁️ عرض</button>
+        <button class="ib-merge-btn ${r.selected?'active':''}" onclick="toggleSel(${r.id})">${r.selected?'✅ محدد':'➕ تحديد للدمج'}</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleSel(id) {
+  const r = inbox.find(x => x.id === id);
+  if(r) r.selected = !r.selected;
+  renderMerge();
+}
+
+function generateMerged() {
+  const sel = inbox.filter(r => r.selected);
+  const today = new Date().toLocaleDateString('ar-SA', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  
+  let html = `
+    <div class="merged-box" id="mergedBoxEl">
+      <div class="merged-hdr">📑 <div><strong>التقرير اليومي الموحد</strong><br><small>${today}</small></div></div>
+      <div style="padding:15px;">
+        <div class="mr-stat-grid">
+          <div class="mr-stat"><div class="msv">${sel.length}</div><div class="msl">تقارير مدموجة</div></div>
+          <div class="mr-stat"><div class="msv">100%</div><div class="msl">جاهزية</div></div>
+        </div>
+        <div class="mr-sec" style="margin-top:15px;">
+          <h4>🔨 ملخص الأعمال</h4>
+          ${sel.map(r => `<div style="margin-top:8px; font-size:12px; border-bottom:1px solid var(--line); padding-bottom:5px;"><strong>${r.from}:</strong> ${r.data.works}</div>`).join('')}
+        </div>
+        <button class="save-btn" style="margin-top:15px;" onclick="exportPDF()">🖨️ تصدير التقرير الموحد PDF</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('mergedOut').innerHTML = html;
+  document.getElementById('mergedOut').style.display = 'block';
+  document.getElementById('mergedOut').scrollIntoView({behavior:'smooth'});
+}
+
+function exportPDF() {
+  window.print();
+}
+
+// ══ USER MANAGEMENT ══
+async function renderUsers() {
+  if(!window._fbReady) return;
+  const snap = await window._db.collection('users').get();
+  users = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  const list = document.getElementById('usersList');
+  list.innerHTML = users.map(u => `
+    <div class="user-card ${u.active?'active-user':'inactive-user'}">
+      <div class="uc-top">
+        <div class="uc-left">
+          <div class="uc-av" style="background:${ROLE_COLORS[u.role]}">${u.fullName.substring(0,2)}</div>
+          <div><div class="uc-name">${u.fullName}</div><div class="uc-role">${ROLE_LABELS[u.role]} (@${u.username})</div></div>
+        </div>
+        <div class="uc-actions">
+          <button class="uc-btn uc-edit" onclick="openUserModal('${u.id}')">✏️</button>
+          <button class="uc-btn uc-toggle ${u.active?'':'off'}" onclick="toggleUser('${u.id}')">${u.active?'تعطيل':'تفعيل'}</button>
+        </div>
+      </div>
+      <div class="uc-perms">
+        ${ALL_PERMS.filter(p => u.perms && u.perms[p.key]).map(p => `<span class="perm-chip on">${p.label}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function openUserModal(id = null) {
+  editUserId = id;
+  const modal = document.getElementById('userModal');
+  const list = document.getElementById('mPermsList');
+  
+  list.innerHTML = ALL_PERMS.map(p => `
+    <label style="display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:5px; cursor:pointer;">
+      <input type="checkbox" class="perm-check" data-key="${p.key}"> ${p.label}
+    </label>
+  `).join('');
+  
+  if(id) {
+    const u = users.find(x => x.id === id);
+    document.getElementById('modalTitle').textContent = 'تعديل مستخدم';
+    document.getElementById('mFullName').value = u.fullName;
+    document.getElementById('mUser').value = u.username;
+    document.getElementById('mPass').value = '';
+    document.getElementById('mPass').placeholder = 'اتركه فارغاً للإبقاء على نفس الكلمة';
+    document.getElementById('mRole').value = u.role;
+    document.querySelectorAll('.perm-check').forEach(cb => {
+      cb.checked = u.perms && u.perms[cb.dataset.key];
+    });
+  } else {
+    document.getElementById('modalTitle').textContent = 'إضافة مستخدم جديد';
+    document.getElementById('mFullName').value = '';
+    document.getElementById('mUser').value = '';
+    document.getElementById('mPass').value = '';
+    document.getElementById('mPass').placeholder = '••••••••';
+    document.getElementById('mRole').value = 'eng';
+    applyDefaultPerms();
+  }
+  
+  modal.style.display = 'flex';
+}
+
+function closeUserModal() {
+  document.getElementById('userModal').style.display = 'none';
+}
+
+function applyDefaultPerms() {
+  const role = document.getElementById('mRole').value;
+  const perms = DEFAULT_PERMS[role];
+  document.querySelectorAll('.perm-check').forEach(cb => {
+    cb.checked = perms[cb.dataset.key];
+  });
+}
+
+async function saveUser() {
+  if(!window._fbReady) return;
+  const fullName  = document.getElementById('mFullName').value.trim();
+  const username  = document.getElementById('mUser').value.trim();
+  const password  = document.getElementById('mPass').value;
+  const role      = document.getElementById('mRole').value;
+  
+  if(!fullName || !username) { alert('يرجى إكمال البيانات'); return; }
+  if(!editUserId && !password) { alert('كلمة المرور مطلوبة للمستخدم الجديد'); return; }
+
+  const perms = {};
+  document.querySelectorAll('.perm-check').forEach(cb => {
+    perms[cb.dataset.key] = cb.checked;
+  });
+
+  const btn = document.querySelector('#userModal .btn-pri');
+  btn.textContent = '⏳ جارٍ الحفظ...';
+  btn.disabled = true;
+
+  try {
+    if(editUserId) {
+      await window._db.collection('users').doc(editUserId).update({ fullName, username, role, perms });
+      if(password) showToast('⚠️ لا يمكن تغيير كلمة المرور من هنا');
+    } else {
+      const savedCfg = JSON.parse(localStorage.getItem('fb_config'));
+      const secondaryApp = firebase.initializeApp(savedCfg, 'secondary_' + Date.now());
+      const secondaryAuth = secondaryApp.auth();
+      const email = username.replace(/\s+/g,'').toLowerCase() + '@site-report.app';
+      const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+      const uid = cred.user.uid;
+      await window._db.collection('users').doc(uid).set({
+        fullName, username, email, role, perms, active: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await secondaryAuth.signOut();
+    }
+
+    await renderUsers();
+    closeUserModal();
+    showToast('✅ تم حفظ بيانات المستخدم');
+
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ خطأ: ' + (e.message || 'حاول مرة أخرى'));
+  } finally {
+    btn.textContent = 'حفظ المستخدم';
+    btn.disabled = false;
+  }
+}
+
+async function toggleUser(id) {
+  if(!window._fbReady) return;
+  const u = users.find(x => x.id === id);
+  if(u.role === 'manager' && u.active) { alert('لا يمكن تعطيل مدير المشروع الرئيسي'); return; }
+  await window._db.collection('users').doc(id).update({ active: !u.active });
+  renderUsers();
+}
+
+// ══ PERMS VIEW LOGIC ══
+function renderPermsTable() {
+  const t = document.getElementById('permTable');
+  let html = `<tr><th>الصلاحية</th>${Object.keys(ROLE_LABELS).map(r => `<th>${ROLE_LABELS[r].split(' ')[1]}</th>`).join('')}</tr>`;
+  ALL_PERMS.forEach(p => {
+    html += `<tr><td>${p.label}</td>`;
+    Object.keys(ROLE_LABELS).forEach(r => {
+      html += `<td>${DEFAULT_PERMS[r][p.key] ? '✅' : '❌'}</td>`;
+    });
+    html += `</tr>`;
+  });
+  t.innerHTML = html;
+}
+
+function renderMyPerms() {
+  const c = document.getElementById('myPerms');
+  c.innerHTML = ALL_PERMS.map(p => `
+    <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--line); padding:4px 0;">
+      <span>${p.label}</span>
+      <span style="font-weight:700; color:${cu.perms[p.key]?'var(--green)':'var(--rust)'}">${cu.perms[p.key]?'مسموح':'ممنوع'}</span>
+    </div>
+  `).join('');
+}
+
+function showToast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function resetFirebaseConfig() {
+  localStorage.removeItem('fb_config');
+  location.reload();
+}
+
+// Initialize on load
+window.onload = () => {
+  // Date default
+  const rd = document.getElementById('reportDate');
+  if(rd) rd.valueAsDate = new Date();
+};
+</script>
+</body>
+</html>
