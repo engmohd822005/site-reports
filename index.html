@@ -993,6 +993,8 @@ async function loadTeam() {
     });
   }
 }
+
+function buildSummary() {
   document.getElementById('s-proj').textContent = document.getElementById('projName').value || '—';
   document.getElementById('s-owner').textContent = document.getElementById('owner').value || '—';
   document.getElementById('s-date').textContent = document.getElementById('reportDate').value || '—';
