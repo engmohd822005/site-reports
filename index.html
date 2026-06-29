@@ -339,7 +339,46 @@ textarea.fi{resize:vertical;}
         <div class="topbar-role" id="uRole">مدير المشروع</div>
       </div>
     </div>
-    <button class="logout-btn" onclick="doLogout()">خروج</button>
+    <div style="display:flex;gap:6px;">
+      <button class="logout-btn" onclick="openChangePass()" style="background:var(--steel);">🔑 كلمة السر</button>
+      <button class="logout-btn" onclick="doLogout()">خروج</button>
+    </div>
+  </div>
+
+  <!-- CHANGE PASSWORD MODAL -->
+  <div id="changePassModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:20px;padding:22px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+      <div style="font-size:15px;font-weight:800;margin-bottom:16px;color:var(--dark);display:flex;justify-content:space-between;align-items:center;">
+        🔑 تغيير كلمة السر
+        <button onclick="closeChangePass()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--mid);">✕</button>
+      </div>
+
+      <!-- تغيير كلمة السر الخاصة -->
+      <div style="background:#F8F6F2;border-radius:12px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--steel);margin-bottom:10px;">🔐 تغيير كلمة سرك الخاصة</div>
+        <span class="lbl">كلمة السر الحالية</span>
+        <input class="fi" type="password" id="cpCurrent" placeholder="••••••••">
+        <span class="lbl">كلمة السر الجديدة</span>
+        <input class="fi" type="password" id="cpNew" placeholder="6 أحرف على الأقل">
+        <span class="lbl">تأكيد كلمة السر الجديدة</span>
+        <input class="fi" type="password" id="cpConfirm" placeholder="••••••••">
+        <button onclick="changeMyPassword()" style="width:100%;padding:11px;background:var(--steel);color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;">تغيير كلمة السر</button>
+        <div id="cpMyErr" style="display:none;color:var(--rust);font-size:11px;font-weight:600;margin-top:6px;text-align:center;"></div>
+        <div id="cpMyOk" style="display:none;color:var(--green);font-size:11px;font-weight:600;margin-top:6px;text-align:center;">✅ تم تغيير كلمة السر بنجاح</div>
+      </div>
+
+      <!-- تغيير كلمة سر مستخدم آخر (للمدير فقط) -->
+      <div id="cpAdminSection" style="display:none;background:#F0EDE8;border-radius:12px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:10px;">👑 تغيير كلمة سر مستخدم (للمدير)</div>
+        <span class="lbl">اختر المستخدم</span>
+        <select class="fi" id="cpUserSelect"></select>
+        <span class="lbl">كلمة السر الجديدة</span>
+        <input class="fi" type="password" id="cpUserNewPass" placeholder="6 أحرف على الأقل">
+        <button onclick="changeUserPassword()" style="width:100%;padding:11px;background:var(--amber);color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;">تغيير كلمة سر المستخدم</button>
+        <div id="cpAdminErr" style="display:none;color:var(--rust);font-size:11px;font-weight:600;margin-top:6px;text-align:center;"></div>
+        <div id="cpAdminOk" style="display:none;color:var(--green);font-size:11px;font-weight:600;margin-top:6px;text-align:center;">✅ تم تغيير كلمة السر بنجاح</div>
+      </div>
+    </div>
   </div>
 
   <div class="tab-bar">
@@ -706,6 +745,7 @@ function listenAuth() {
           document.getElementById('loginScreen').style.display = 'none';
           document.getElementById('app').style.display = 'block';
           setupApp();
+          checkPwReset();
           showToast('أهلاً بك، ' + cu.fullName);
         }
       } catch(e) {
@@ -982,7 +1022,124 @@ async function loadTeam() {
   // Now handled by initDynamicFields
 }
 
-// ══ DYNAMIC FIELDS SYSTEM ══
+// ══ CHANGE PASSWORD ══
+function openChangePass() {
+  const modal = document.getElementById('changePassModal');
+  modal.style.display = 'flex';
+  // Reset fields
+  ['cpCurrent','cpNew','cpConfirm','cpUserNewPass'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  ['cpMyErr','cpMyOk','cpAdminErr','cpAdminOk'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+  // Show admin section for managers only
+  const adminSec = document.getElementById('cpAdminSection');
+  if(adminSec) adminSec.style.display = cu && cu.role === 'manager' ? 'block' : 'none';
+  // Populate user dropdown for manager
+  if(cu && cu.role === 'manager') {
+    const sel = document.getElementById('cpUserSelect');
+    sel.innerHTML = users
+      .filter(u => u.id !== cu.uid)
+      .map(u => `<option value="${u.id}" data-email="${u.email}">${u.fullName} (@${u.username})</option>`)
+      .join('');
+  }
+}
+
+function closeChangePass() {
+  document.getElementById('changePassModal').style.display = 'none';
+}
+
+async function changeMyPassword() {
+  const current = document.getElementById('cpCurrent').value;
+  const newPass  = document.getElementById('cpNew').value;
+  const confirm  = document.getElementById('cpConfirm').value;
+  const errEl = document.getElementById('cpMyErr');
+  const okEl  = document.getElementById('cpMyOk');
+  errEl.style.display = 'none';
+  okEl.style.display  = 'none';
+
+  if(!current || !newPass || !confirm) { errEl.textContent = 'يرجى إكمال جميع الحقول'; errEl.style.display = 'block'; return; }
+  if(newPass.length < 6) { errEl.textContent = 'كلمة السر الجديدة 6 أحرف على الأقل'; errEl.style.display = 'block'; return; }
+  if(newPass !== confirm) { errEl.textContent = 'كلمتا السر غير متطابقتين'; errEl.style.display = 'block'; return; }
+
+  try {
+    // Re-authenticate then update
+    const credential = firebase.auth.EmailAuthProvider.credential(cu.email, current);
+    await window._auth.currentUser.reauthenticateWithCredential(credential);
+    await window._auth.currentUser.updatePassword(newPass);
+    okEl.style.display = 'block';
+    showToast('✅ تم تغيير كلمة السر بنجاح');
+    setTimeout(closeChangePass, 1500);
+  } catch(e) {
+    console.error(e);
+    if(e.code === 'auth/wrong-password') {
+      errEl.textContent = '⚠️ كلمة السر الحالية غير صحيحة';
+    } else {
+      errEl.textContent = '⚠️ خطأ: ' + (e.message || 'حاول مرة أخرى');
+    }
+    errEl.style.display = 'block';
+  }
+}
+
+async function changeUserPassword() {
+  const sel     = document.getElementById('cpUserSelect');
+  const newPass = document.getElementById('cpUserNewPass').value;
+  const errEl   = document.getElementById('cpAdminErr');
+  const okEl    = document.getElementById('cpAdminOk');
+  errEl.style.display = 'none';
+  okEl.style.display  = 'none';
+
+  if(!sel.value || !newPass) { errEl.textContent = 'يرجى اختيار المستخدم وإدخال كلمة السر'; errEl.style.display = 'block'; return; }
+  if(newPass.length < 6) { errEl.textContent = 'كلمة السر 6 أحرف على الأقل'; errEl.style.display = 'block'; return; }
+
+  try {
+    const selectedUser = users.find(u => u.id === sel.value);
+    if(!selectedUser) throw new Error('user not found');
+
+    // Use secondary app to change password without affecting current session
+    const savedCfg = JSON.parse(localStorage.getItem('fb_config')) ||
+      { apiKey:"AIzaSyBOTObojdKpSaOTctbC2-fC3L851BRaN-s", authDomain:"gamsa-factory.firebaseapp.com",
+        projectId:"gamsa-factory", storageBucket:"gamsa-factory.firebasestorage.app",
+        messagingSenderId:"429311005748", appId:"1:429311005748:web:0ae9d410d58530371d6661" };
+
+    const secondaryApp = firebase.initializeApp(savedCfg, 'pwchange_' + Date.now());
+    const secondaryAuth = secondaryApp.auth();
+
+    // Sign in as the user temporarily using their stored email
+    // We need their current password — instead use Admin SDK approach via Firestore flag
+    // Store a password reset request in Firestore for the user
+    await window._db.collection('pwReset').doc(sel.value).set({
+      newPass, requestedBy: cu.uid, requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await secondaryAuth.signOut();
+
+    okEl.style.display = 'block';
+    showToast('✅ سيتم تطبيق كلمة السر الجديدة عند دخول المستخدم');
+    document.getElementById('cpUserNewPass').value = '';
+  } catch(e) {
+    console.error(e);
+    errEl.textContent = '⚠️ ' + (e.message || 'حاول مرة أخرى');
+    errEl.style.display = 'block';
+  }
+}
+
+// Check on login if there's a password reset request
+async function checkPwReset() {
+  if(!window._fbReady || !cu) return;
+  try {
+    const snap = await window._db.collection('pwReset').doc(cu.uid).get();
+    if(snap.exists) {
+      const data = snap.data();
+      await window._auth.currentUser.updatePassword(data.newPass);
+      await window._db.collection('pwReset').doc(cu.uid).delete();
+      showToast('🔑 تم تحديث كلمة السر الخاصة بك');
+    }
+  } catch(e) { console.error('pwReset check:', e); }
+}
 const DEFAULT_FIELDS = {
   proj: [
     {id:'projName', label:'اسم المشروع', type:'text', value:'مشروع إنشاء مجمع سكني - المرحلة أ'},
