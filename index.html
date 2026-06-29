@@ -371,7 +371,7 @@ textarea.fi{resize:vertical;}
           <div style="display:flex;align-items:center;gap:8px;flex:1;">
             <div class="icon">🏗️</div>بيانات المشروع
           </div>
-          <button id="editProjBtn" onclick="toggleEditSection('proj')" style="display:none;background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
+          <button id="editProjBtn" onclick="toggleEditSection('proj')" style="background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
         <div id="projFieldsContainer"></div>
         <div id="projEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
@@ -390,7 +390,7 @@ textarea.fi{resize:vertical;}
           <div style="display:flex;align-items:center;gap:8px;flex:1;">
             <div class="icon">👷</div>الطاقم الفني والإداري
           </div>
-          <button id="editTeamBtn" onclick="toggleEditSection('team')" style="display:none;background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
+          <button id="editTeamBtn" onclick="toggleEditSection('team')" style="background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
         <div id="teamFieldsContainer"></div>
         <div id="teamEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
@@ -409,7 +409,7 @@ textarea.fi{resize:vertical;}
           <div style="display:flex;align-items:center;gap:8px;flex:1;">
             <div class="icon">📅</div>التوقيت والجدول
           </div>
-          <button id="editSchedBtn" onclick="toggleEditSection('sched')" style="display:none;background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
+          <button id="editSchedBtn" onclick="toggleEditSection('sched')" style="background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
         <div id="schedFieldsContainer"></div>
         <div id="schedEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
@@ -845,12 +845,14 @@ function setupApp() {
   initDynamicFields();
 
   // Show edit buttons for manager only
-  if(cu.role === 'manager') {
+  setTimeout(() => {
+    const isManager = cu && cu.role === 'manager';
     ['editProjBtn','editTeamBtn','editSchedBtn'].forEach(id => {
       const el = document.getElementById(id);
-      if(el) el.style.display = 'block';
+      if(el) el.style.display = isManager ? 'inline-block' : 'none';
     });
-  }
+    console.log('Role:', cu ? cu.role : 'null', 'isManager:', isManager);
+  }, 500);
 
   // Live inbox listener from Firestore
   if(window._fbReady) {
