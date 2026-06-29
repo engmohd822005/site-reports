@@ -112,7 +112,7 @@ textarea.fi{resize:vertical;}
 
 /* CARD / FORM */
 .card{background:#fff;border-radius:14px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow);}
-.card-title{font-size:13px;font-weight:700;color:var(--steel);margin-bottom:11px;display:flex;align-items:center;gap:8px;}
+.card-title{font-size:13px;font-weight:700;color:var(--steel);margin-bottom:11px;display:flex;align-items:center;gap:8px;justify-content:space-between;}
 .card-title .icon{width:27px;height:27px;background:var(--amber-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;}
 .section{display:none;padding:13px;padding-bottom:90px;animation:fadeIn .2s ease;}
 .section.active{display:block;}
@@ -355,73 +355,73 @@ textarea.fi{resize:vertical;}
     <div class="steps-nav" id="stepsNav">
       <button class="step-btn active" onclick="showStep(1)">1. المعلومات</button>
       <button class="step-btn" onclick="showStep(2)">2. الأعمال</button>
-      <button class="step-btn" onclick="showStep(3)">3. العمالة</button>
-      <button class="step-btn" onclick="showStep(4)">4. المشكلات</button>
-      <button class="step-btn" onclick="showStep(5)">5. مراجعة</button>
+      <button class="step-btn" onclick="showStep(2.5)">3. الصور</button>
+      <button class="step-btn" onclick="showStep(3)">4. العمالة</button>
+      <button class="step-btn" onclick="showStep(4)">5. المشكلات</button>
+      <button class="step-btn" onclick="showStep(5)">6. مراجعة</button>
     </div>
-    <div class="progress-bar"><div class="progress-fill" id="pFill" style="width:20%"></div></div>
+    <div class="progress-bar"><div class="progress-fill" id="pFill" style="width:16%"></div></div>
 
     <!-- STEP 1: INFO -->
     <div class="section active" id="step1">
+
+      <!-- بيانات المشروع -->
       <div class="card">
-        <div class="card-title"><div class="icon">🏗️</div>بيانات المشروع</div>
-        <span class="lbl">اسم المشروع</span>
-        <input class="fi" type="text" id="projName" value="مشروع إنشاء مجمع سكني - المرحلة أ">
-        <div class="row-2">
-          <div><span class="lbl">كود المشروع</span><input class="fi" type="text" id="projCode" value="PRJ-2026-001"></div>
-          <div><span class="lbl">رقم التقرير</span><input class="fi" type="number" id="reportNum" value="142"></div>
+        <div class="card-title">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;">
+            <div class="icon">🏗️</div>بيانات المشروع
+          </div>
+          <button id="editProjBtn" onclick="toggleEditSection('proj')" style="display:none;background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
-        <span class="lbl">المالك</span>
-        <input class="fi" type="text" id="owner" value="شركة التطوير العقاري">
-        <span class="lbl">المقاول الرئيسي</span>
-        <input class="fi" type="text" id="contractor" value="شركة المقاولات المتحدة">
+        <div id="projFieldsContainer"></div>
+        <div id="projEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--steel);">إدارة حقول بيانات المشروع</div>
+          <div id="projFieldsList"></div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px;">
+            <input class="fi" type="text" id="newProjFieldName" placeholder="اسم الحقل الجديد" style="margin:0;">
+            <button onclick="addCustomField('proj')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ إضافة</button>
+          </div>
+        </div>
       </div>
 
       <!-- الطاقم الفني والإداري -->
       <div class="card">
-        <div class="card-title"><div class="icon">👷</div>الطاقم الفني والإداري</div>
-
-        <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);">🔧 الطاقم الفني</div>
-        <div class="row-2">
-          <div><span class="lbl">مدير المشروع</span><input class="fi" type="text" id="teamPM" placeholder="الاسم والمؤهل"></div>
-          <div><span class="lbl">المهندس المقيم</span><input class="fi" type="text" id="teamRE" placeholder="الاسم والمؤهل"></div>
+        <div class="card-title">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;">
+            <div class="icon">👷</div>الطاقم الفني والإداري
+          </div>
+          <button id="editTeamBtn" onclick="toggleEditSection('team')" style="display:none;background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
-        <div class="row-2">
-          <div><span class="lbl">مهندس الموقع</span><input class="fi" type="text" id="teamSE" placeholder="الاسم والمؤهل"></div>
-          <div><span class="lbl">المساح</span><input class="fi" type="text" id="teamSurv" placeholder="الاسم والمؤهل"></div>
-        </div>
-        <div class="row-2">
-          <div><span class="lbl">مهندس الجودة</span><input class="fi" type="text" id="teamQC" placeholder="الاسم والمؤهل"></div>
-          <div><span class="lbl">مهندس السلامة</span><input class="fi" type="text" id="teamHSE" placeholder="الاسم والمؤهل"></div>
-        </div>
-
-        <div style="font-size:12px;font-weight:700;color:var(--steel);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);">🗂️ الطاقم الإداري</div>
-        <div class="row-2">
-          <div><span class="lbl">مدير المكتب</span><input class="fi" type="text" id="teamOM" placeholder="الاسم"></div>
-          <div><span class="lbl">المحاسب</span><input class="fi" type="text" id="teamAcc" placeholder="الاسم"></div>
-        </div>
-        <div class="row-2">
-          <div><span class="lbl">مسؤول المخازن</span><input class="fi" type="text" id="teamStore" placeholder="الاسم"></div>
-          <div><span class="lbl">مسؤول الموارد البشرية</span><input class="fi" type="text" id="teamHR" placeholder="الاسم"></div>
-        </div>
-
-        <div style="margin-top:10px;text-align:center;">
-          <button onclick="saveTeam()" class="add-btn" style="background:var(--steel);color:#fff;border:none;width:100%;">💾 حفظ بيانات الطاقم</button>
+        <div id="teamFieldsContainer"></div>
+        <div id="teamEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--steel);">إدارة حقول الطاقم</div>
+          <div id="teamFieldsList"></div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px;">
+            <input class="fi" type="text" id="newTeamFieldName" placeholder="اسم الحقل الجديد" style="margin:0;">
+            <button onclick="addCustomField('team')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ إضافة</button>
+          </div>
         </div>
       </div>
+
+      <!-- التوقيت والجدول -->
       <div class="card">
-        <div class="card-title"><div class="icon">📅</div>التوقيت والجدول</div>
-        <span class="lbl">تاريخ التقرير</span>
-        <input class="fi" type="date" id="reportDate">
-        <div class="row-2">
-          <div><span class="lbl">يوم العمل</span><input class="fi" type="number" id="workDay" value="215"></div>
-          <div><span class="lbl">تاريخ البدء</span><input class="fi" type="date" id="startDate" value="2025-11-20"></div>
+        <div class="card-title">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;">
+            <div class="icon">📅</div>التوقيت والجدول
+          </div>
+          <button id="editSchedBtn" onclick="toggleEditSection('sched')" style="display:none;background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
-        <div class="row-2">
-          <div><span class="lbl">انتهاء العقد</span><input class="fi" type="date" id="contractEndDate" value="2026-12-30"></div>
-          <div><span class="lbl">الانتهاء المعدل</span><input class="fi" type="date" id="revisedEndDate" value="2027-02-15"></div>
+        <div id="schedFieldsContainer"></div>
+        <div id="schedEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--steel);">إدارة حقول التوقيت</div>
+          <div id="schedFieldsList"></div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px;">
+            <input class="fi" type="text" id="newSchedFieldName" placeholder="اسم الحقل الجديد" style="margin:0;">
+            <button onclick="addCustomField('sched')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ إضافة</button>
+          </div>
         </div>
       </div>
+
     </div>
 
     <!-- STEP 2: WORKS -->
@@ -451,6 +451,20 @@ textarea.fi{resize:vertical;}
           <div><span class="lbl">الحرارة العظمى</span><input class="fi" type="number" id="tempMax" value="38"></div>
           <div><span class="lbl">الحرارة الصغرى</span><input class="fi" type="number" id="tempMin" value="24"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- STEP 2.5: PHOTOS -->
+    <div class="section" id="step2_5">
+      <div class="card">
+        <div class="card-title"><div class="icon">📸</div>صور الأعمال الميدانية</div>
+        <div id="photoGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;"></div>
+        <input type="file" id="photoInp" multiple accept="image/*" capture="environment" style="display:none" onchange="handlePhotos(event)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="add-btn" onclick="document.getElementById('photoInp').click()" style="background:var(--steel);color:#fff;border:none;">📷 كاميرا / معرض</button>
+          <button class="add-btn" onclick="document.getElementById('photoGrid').innerHTML=''" style="background:var(--rust);color:#fff;border:none;">🗑️ مسح الكل</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--mid);text-align:center;">اضغط على الصورة لإضافة وصف</div>
       </div>
     </div>
 
@@ -494,16 +508,7 @@ textarea.fi{resize:vertical;}
         <button class="add-btn" onclick="addIssue()" style="background:var(--steel);color:#fff;border:none;">إضافة المشكلة للقائمة</button>
       </div>
       <div id="issuesList"></div>
-      
-      <div class="card">
-        <div class="card-title"><div class="icon">📸</div>صور الأعمال الميدانية</div>
-        <div id="photoGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;"></div>
-        <input type="file" id="photoInp" multiple accept="image/*" capture="environment" style="display:none" onchange="handlePhotos(event)">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button class="add-btn" onclick="document.getElementById('photoInp').click()" style="background:var(--steel);color:#fff;border:none;">📷 كاميرا / معرض</button>
-          <button class="add-btn" onclick="document.getElementById('photoGrid').innerHTML=''" style="background:var(--rust);color:#fff;border:none;">🗑️ مسح الكل</button>
-        </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--mid);text-align:center;">يمكن إضافة وصف لكل صورة بالضغط عليها</div>
+    </div>
       </div>
     </div>
 
@@ -837,6 +842,15 @@ function setupApp() {
   renderPermsTable();
   renderMyPerms();
   loadTeam();
+  initDynamicFields();
+
+  // Show edit buttons for manager only
+  if(cu.role === 'manager') {
+    ['editProjBtn','editTeamBtn','editSchedBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = 'block';
+    });
+  }
 
   // Live inbox listener from Firestore
   if(window._fbReady) {
@@ -873,13 +887,17 @@ function showView(v, btn) {
   if(v === 'merge') renderMerge();
 }
 
+const STEPS = [1, 2, 2.5, 3, 4, 5];
+
 function showStep(s) {
   document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.step-btn').forEach(x => x.classList.remove('active'));
-  document.getElementById('step' + s).classList.add('active');
-  document.querySelectorAll('.step-btn')[s-1].classList.add('active');
+  const sId = s === 2.5 ? 'step2_5' : 'step' + s;
+  document.getElementById(sId).classList.add('active');
+  const idx = STEPS.indexOf(s);
+  document.querySelectorAll('.step-btn')[idx].classList.add('active');
   currentStep = s;
-  document.getElementById('pFill').style.width = (s * 20) + '%';
+  document.getElementById('pFill').style.width = ((idx + 1) / STEPS.length * 100) + '%';
   
   document.getElementById('prevBtn').disabled = s === 1;
   document.getElementById('nextBtn').textContent = s === 5 ? 'إرسال التقرير' : 'التالي';
@@ -888,12 +906,14 @@ function showStep(s) {
 }
 
 function nextStep() {
-  if(currentStep < 5) showStep(currentStep + 1);
+  const idx = STEPS.indexOf(currentStep);
+  if(idx < STEPS.length - 1) showStep(STEPS[idx + 1]);
   else sendReport();
 }
 
 function prevStep() {
-  if(currentStep > 1) showStep(currentStep - 1);
+  const idx = STEPS.indexOf(currentStep);
+  if(idx > 0) showStep(STEPS[idx - 1]);
 }
 
 // ══ REPORT LOGIC ══
@@ -952,91 +972,170 @@ function openPhotoDesc(id) {
 }
 
 function saveTeam() {
-  const team = {
-    PM:    document.getElementById('teamPM').value,
-    RE:    document.getElementById('teamRE').value,
-    SE:    document.getElementById('teamSE').value,
-    Surv:  document.getElementById('teamSurv').value,
-    QC:    document.getElementById('teamQC').value,
-    HSE:   document.getElementById('teamHSE').value,
-    OM:    document.getElementById('teamOM').value,
-    Acc:   document.getElementById('teamAcc').value,
-    Store: document.getElementById('teamStore').value,
-    HR:    document.getElementById('teamHR').value,
-  };
-  if(window._fbReady && cu) {
-    window._db.collection('teams').doc(cu.uid).set(team)
-      .then(() => showToast('✅ تم حفظ بيانات الطاقم'))
-      .catch(() => showToast('⚠️ خطأ في الحفظ'));
-  } else {
-    localStorage.setItem('project_team', JSON.stringify(team));
-    showToast('✅ تم حفظ بيانات الطاقم');
-  }
+  // Now handled by saveFieldsConfig in dynamic fields system
+  saveFieldsConfig();
 }
 
 async function loadTeam() {
-  let team = null;
-  if(window._fbReady && cu) {
-    try {
-      const snap = await window._db.collection('teams').doc(cu.uid).get();
-      if(snap.exists) team = snap.data();
-    } catch(e) {}
+  // Now handled by initDynamicFields
+}
+
+// ══ DYNAMIC FIELDS SYSTEM ══
+const DEFAULT_FIELDS = {
+  proj: [
+    {id:'projName', label:'اسم المشروع', type:'text', value:'مشروع إنشاء مجمع سكني - المرحلة أ'},
+    {id:'projCode', label:'كود المشروع', type:'text', value:'PRJ-2026-001'},
+    {id:'reportNum', label:'رقم التقرير', type:'number', value:'142'},
+    {id:'owner', label:'المالك', type:'text', value:'شركة التطوير العقاري'},
+    {id:'contractor', label:'المقاول الرئيسي', type:'text', value:'شركة المقاولات المتحدة'},
+  ],
+  team: [
+    {id:'teamPM', label:'مدير المشروع', type:'text', value:''},
+    {id:'teamRE', label:'المهندس المقيم', type:'text', value:''},
+    {id:'teamSE', label:'مهندس الموقع', type:'text', value:''},
+    {id:'teamSurv', label:'المساح', type:'text', value:''},
+    {id:'teamQC', label:'مهندس الجودة', type:'text', value:''},
+    {id:'teamHSE', label:'مهندس السلامة', type:'text', value:''},
+    {id:'teamOM', label:'مدير المكتب', type:'text', value:''},
+    {id:'teamAcc', label:'المحاسب', type:'text', value:''},
+    {id:'teamStore', label:'مسؤول المخازن', type:'text', value:''},
+    {id:'teamHR', label:'مسؤول الموارد البشرية', type:'text', value:''},
+  ],
+  sched: [
+    {id:'reportDate', label:'تاريخ التقرير', type:'date', value:''},
+    {id:'workDay', label:'يوم العمل', type:'number', value:'215'},
+    {id:'startDate', label:'تاريخ البدء', type:'date', value:'2025-11-20'},
+    {id:'contractEndDate', label:'انتهاء العقد', type:'date', value:'2026-12-30'},
+    {id:'revisedEndDate', label:'الانتهاء المعدل', type:'date', value:'2027-02-15'},
+  ]
+};
+
+let dynamicFields = {};
+
+function initDynamicFields() {
+  // Load from Firestore or localStorage
+  const saved = localStorage.getItem('dynamic_fields');
+  if(saved) {
+    dynamicFields = JSON.parse(saved);
+  } else {
+    dynamicFields = JSON.parse(JSON.stringify(DEFAULT_FIELDS));
   }
-  if(!team) {
-    const saved = localStorage.getItem('project_team');
-    if(saved) team = JSON.parse(saved);
+  // Load from Firestore if available
+  if(window._fbReady) {
+    window._db.collection('settings').doc('fields').get().then(snap => {
+      if(snap.exists) {
+        dynamicFields = snap.data();
+        localStorage.setItem('dynamic_fields', JSON.stringify(dynamicFields));
+      }
+      renderAllFields();
+    }).catch(() => renderAllFields());
+  } else {
+    renderAllFields();
   }
-  if(team) {
-    ['PM','RE','SE','Surv','QC','HSE','OM','Acc','Store','HR'].forEach(k => {
-      const el = document.getElementById('team' + k);
-      if(el && team[k]) el.value = team[k];
-    });
+}
+
+function renderAllFields() {
+  ['proj','team','sched'].forEach(sec => renderFields(sec));
+}
+
+function renderFields(sec) {
+  const container = document.getElementById(sec + 'FieldsContainer');
+  if(!container) return;
+  const fields = dynamicFields[sec] || [];
+  container.innerHTML = fields.map(f => `
+    <span class="lbl">${f.label}</span>
+    <input class="fi" type="${f.type}" id="${f.id}" value="${f.value || ''}" placeholder="${f.label}">
+  `).join('');
+
+  // Also render edit panel list
+  const listEl = document.getElementById(sec + 'FieldsList');
+  if(listEl) {
+    listEl.innerHTML = fields.map((f, i) => `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;background:#fff;border-radius:8px;padding:6px 10px;">
+        <span style="flex:1;font-size:12px;">${f.label}</span>
+        <button onclick="removeField('${sec}',${i})" style="background:var(--rust);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">حذف</button>
+      </div>
+    `).join('') || '<div style="font-size:11px;color:var(--mid);text-align:center;padding:8px;">لا توجد حقول</div>';
   }
+}
+
+function toggleEditSection(sec) {
+  const panel = document.getElementById(sec + 'EditPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  renderFields(sec);
+}
+
+function addCustomField(sec) {
+  const inp = document.getElementById('new' + sec.charAt(0).toUpperCase() + sec.slice(1) + 'FieldName');
+  const label = inp.value.trim();
+  if(!label) return;
+  const id = sec + '_custom_' + Date.now();
+  if(!dynamicFields[sec]) dynamicFields[sec] = [];
+  dynamicFields[sec].push({id, label, type:'text', value:''});
+  inp.value = '';
+  saveFieldsConfig();
+  renderFields(sec);
+}
+
+function removeField(sec, idx) {
+  if(!confirm('هل تريد حذف هذا الحقل؟')) return;
+  dynamicFields[sec].splice(idx, 1);
+  saveFieldsConfig();
+  renderFields(sec);
+}
+
+function saveFieldsConfig() {
+  localStorage.setItem('dynamic_fields', JSON.stringify(dynamicFields));
+  if(window._fbReady) {
+    window._db.collection('settings').doc('fields').set(dynamicFields)
+      .then(() => showToast('✅ تم حفظ إعداد الحقول'))
+      .catch(() => {});
+  }
+}
+
+function getFieldValues(sec) {
+  const fields = dynamicFields[sec] || [];
+  const result = {};
+  fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    if(el) result[f.label] = el.value;
+  });
+  return result;
 }
 
 function buildSummary() {
-  document.getElementById('s-proj').textContent = document.getElementById('projName').value || '—';
-  document.getElementById('s-owner').textContent = document.getElementById('owner').value || '—';
-  document.getElementById('s-date').textContent = document.getElementById('reportDate').value || '—';
+  const g = id => { const el = document.getElementById(id); return el ? el.value : '—'; };
+  document.getElementById('s-proj').textContent = g('projName') || '—';
+  document.getElementById('s-owner').textContent = g('owner') || '—';
+  document.getElementById('s-date').textContent = g('reportDate') || '—';
   document.getElementById('s-eng').textContent = cu.fullName;
   document.getElementById('s-workers').textContent = document.getElementById('totalWorkers').textContent + ' عامل';
-  document.getElementById('s-progress').textContent = (document.getElementById('progress').value || '0') + '%';
+  document.getElementById('s-progress').textContent = (g('progress') || '0') + '%';
 }
 
 function collectReportData(status) {
+  const projFields = getFieldValues('proj');
+  const teamFields = getFieldValues('team');
+  const schedFields = getFieldValues('sched');
+  const projNameEl = document.getElementById('projName');
+  const reportDateEl = document.getElementById('reportDate');
   return {
     uid: cu.uid,
     engName: cu.fullName,
     role: cu.role,
     status,
-    projName:      document.getElementById('projName').value,
-    projCode:      document.getElementById('projCode').value,
-    reportNum:     document.getElementById('reportNum').value,
-    owner:         document.getElementById('owner').value,
-    contractor:    document.getElementById('contractor').value,
-    reportDate:    document.getElementById('reportDate').value,
-    workDay:       document.getElementById('workDay').value,
-    mainWorks:     document.getElementById('mainWorks').value,
-    progress:      document.getElementById('progress').value,
-    floor:         document.getElementById('floor').value,
-    tomorrow:      document.getElementById('tomorrow').value,
-    weather:       wxVal,
-    tempMax:       document.getElementById('tempMax').value,
-    tempMin:       document.getElementById('tempMin').value,
+    projName:    projNameEl ? projNameEl.value : (projFields['اسم المشروع'] || ''),
+    mainWorks:   document.getElementById('mainWorks') ? document.getElementById('mainWorks').value : '',
+    progress:    document.getElementById('progress') ? document.getElementById('progress').value : '',
+    floor:       document.getElementById('floor') ? document.getElementById('floor').value : '',
+    tomorrow:    document.getElementById('tomorrow') ? document.getElementById('tomorrow').value : '',
+    weather:     wxVal,
+    tempMax:     document.getElementById('tempMax') ? document.getElementById('tempMax').value : '',
+    tempMin:     document.getElementById('tempMin') ? document.getElementById('tempMin').value : '',
+    reportDate:  reportDateEl ? reportDateEl.value : '',
+    projFields, teamFields, schedFields,
     issues,
-    totalWorkers:  document.getElementById('totalWorkers').textContent,
-    team: {
-      PM:    document.getElementById('teamPM').value,
-      RE:    document.getElementById('teamRE').value,
-      SE:    document.getElementById('teamSE').value,
-      Surv:  document.getElementById('teamSurv').value,
-      QC:    document.getElementById('teamQC').value,
-      HSE:   document.getElementById('teamHSE').value,
-      OM:    document.getElementById('teamOM').value,
-      Acc:   document.getElementById('teamAcc').value,
-      Store: document.getElementById('teamStore').value,
-      HR:    document.getElementById('teamHR').value,
-    },
+    totalWorkers: document.getElementById('totalWorkers').textContent,
     savedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
 }
