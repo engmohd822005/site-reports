@@ -357,6 +357,39 @@ textarea.fi{resize:vertical;}
         <span class="lbl">المقاول الرئيسي</span>
         <input class="fi" type="text" id="contractor" value="شركة المقاولات المتحدة">
       </div>
+
+      <!-- الطاقم الفني والإداري -->
+      <div class="card">
+        <div class="card-title"><div class="icon">👷</div>الطاقم الفني والإداري</div>
+
+        <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);">🔧 الطاقم الفني</div>
+        <div class="row-2">
+          <div><span class="lbl">مدير المشروع</span><input class="fi" type="text" id="teamPM" placeholder="الاسم والمؤهل"></div>
+          <div><span class="lbl">المهندس المقيم</span><input class="fi" type="text" id="teamRE" placeholder="الاسم والمؤهل"></div>
+        </div>
+        <div class="row-2">
+          <div><span class="lbl">مهندس الموقع</span><input class="fi" type="text" id="teamSE" placeholder="الاسم والمؤهل"></div>
+          <div><span class="lbl">المساح</span><input class="fi" type="text" id="teamSurv" placeholder="الاسم والمؤهل"></div>
+        </div>
+        <div class="row-2">
+          <div><span class="lbl">مهندس الجودة</span><input class="fi" type="text" id="teamQC" placeholder="الاسم والمؤهل"></div>
+          <div><span class="lbl">مهندس السلامة</span><input class="fi" type="text" id="teamHSE" placeholder="الاسم والمؤهل"></div>
+        </div>
+
+        <div style="font-size:12px;font-weight:700;color:var(--steel);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);">🗂️ الطاقم الإداري</div>
+        <div class="row-2">
+          <div><span class="lbl">مدير المكتب</span><input class="fi" type="text" id="teamOM" placeholder="الاسم"></div>
+          <div><span class="lbl">المحاسب</span><input class="fi" type="text" id="teamAcc" placeholder="الاسم"></div>
+        </div>
+        <div class="row-2">
+          <div><span class="lbl">مسؤول المخازن</span><input class="fi" type="text" id="teamStore" placeholder="الاسم"></div>
+          <div><span class="lbl">مسؤول الموارد البشرية</span><input class="fi" type="text" id="teamHR" placeholder="الاسم"></div>
+        </div>
+
+        <div style="margin-top:10px;text-align:center;">
+          <button onclick="saveTeam()" class="add-btn" style="background:var(--steel);color:#fff;border:none;width:100%;">💾 حفظ بيانات الطاقم</button>
+        </div>
+      </div>
       <div class="card">
         <div class="card-title"><div class="icon">📅</div>التوقيت والجدول</div>
         <span class="lbl">تاريخ التقرير</span>
@@ -444,10 +477,14 @@ textarea.fi{resize:vertical;}
       <div id="issuesList"></div>
       
       <div class="card">
-        <div class="card-title"><div class="icon">📸</div>الصور الميدانية</div>
-        <div id="photoGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"></div>
-        <input type="file" id="photoInp" multiple accept="image/*" style="display:none" onchange="handlePhotos(event)">
-        <button class="add-btn" onclick="document.getElementById('photoInp').click()">📸 إضافة صور من المعرض أو الكاميرا</button>
+        <div class="card-title"><div class="icon">📸</div>صور الأعمال الميدانية</div>
+        <div id="photoGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;"></div>
+        <input type="file" id="photoInp" multiple accept="image/*" capture="environment" style="display:none" onchange="handlePhotos(event)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="add-btn" onclick="document.getElementById('photoInp').click()" style="background:var(--steel);color:#fff;border:none;">📷 كاميرا / معرض</button>
+          <button class="add-btn" onclick="document.getElementById('photoGrid').innerHTML=''" style="background:var(--rust);color:#fff;border:none;">🗑️ مسح الكل</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--mid);text-align:center;">يمكن إضافة وصف لكل صورة بالضغط عليها</div>
       </div>
     </div>
 
@@ -805,6 +842,7 @@ function setupApp() {
   renderUsers();
   renderPermsTable();
   renderMyPerms();
+  loadTeam();
 
   // Live inbox listener from Firestore
   if(window._fbReady) {
@@ -893,16 +931,74 @@ function handlePhotos(e) {
   Array.from(e.target.files).forEach(f => {
     const r = new FileReader();
     r.onload = ev => {
+      const id = 'photo_' + Date.now() + Math.random().toString(36).substr(2,5);
       const div = document.createElement('div');
-      div.style.cssText = `aspect-ratio:1; border-radius:10px; background:url(${ev.target.result}) center/cover; position:relative;`;
-      div.innerHTML = `<div style="position:absolute; top:-5px; left:-5px; width:20px; height:20px; background:var(--rust); color:#fff; border-radius:50%; font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="this.parentElement.remove()">✕</div>`;
+      div.id = id;
+      div.style.cssText = `border-radius:12px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.12); overflow:hidden; position:relative;`;
+      div.innerHTML = `
+        <div style="position:relative;">
+          <img src="${ev.target.result}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;" onclick="openPhotoDesc('${id}')">
+          <div style="position:absolute;top:5px;right:5px;background:rgba(0,0,0,.5);color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="document.getElementById('${id}').remove()">✕</div>
+          <div style="position:absolute;bottom:5px;left:5px;background:rgba(28,43,58,.7);color:#fff;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer;" onclick="openPhotoDesc('${id}')">✏️ وصف</div>
+        </div>
+        <div id="desc_${id}" style="font-size:11px;color:var(--mid);padding:5px 8px;min-height:20px;text-align:right;"></div>
+      `;
       document.getElementById('photoGrid').appendChild(div);
     };
     r.readAsDataURL(f);
   });
+  e.target.value = '';
 }
 
-function buildSummary() {
+function openPhotoDesc(id) {
+  const descEl = document.getElementById('desc_' + id);
+  const current = descEl.textContent;
+  const txt = prompt('أدخل وصف الصورة:', current);
+  if(txt !== null) descEl.textContent = txt;
+}
+
+function saveTeam() {
+  const team = {
+    PM:    document.getElementById('teamPM').value,
+    RE:    document.getElementById('teamRE').value,
+    SE:    document.getElementById('teamSE').value,
+    Surv:  document.getElementById('teamSurv').value,
+    QC:    document.getElementById('teamQC').value,
+    HSE:   document.getElementById('teamHSE').value,
+    OM:    document.getElementById('teamOM').value,
+    Acc:   document.getElementById('teamAcc').value,
+    Store: document.getElementById('teamStore').value,
+    HR:    document.getElementById('teamHR').value,
+  };
+  if(window._fbReady && cu) {
+    window._db.collection('teams').doc(cu.uid).set(team)
+      .then(() => showToast('✅ تم حفظ بيانات الطاقم'))
+      .catch(() => showToast('⚠️ خطأ في الحفظ'));
+  } else {
+    localStorage.setItem('project_team', JSON.stringify(team));
+    showToast('✅ تم حفظ بيانات الطاقم');
+  }
+}
+
+async function loadTeam() {
+  let team = null;
+  if(window._fbReady && cu) {
+    try {
+      const snap = await window._db.collection('teams').doc(cu.uid).get();
+      if(snap.exists) team = snap.data();
+    } catch(e) {}
+  }
+  if(!team) {
+    const saved = localStorage.getItem('project_team');
+    if(saved) team = JSON.parse(saved);
+  }
+  if(team) {
+    ['PM','RE','SE','Surv','QC','HSE','OM','Acc','Store','HR'].forEach(k => {
+      const el = document.getElementById('team' + k);
+      if(el && team[k]) el.value = team[k];
+    });
+  }
+}
   document.getElementById('s-proj').textContent = document.getElementById('projName').value || '—';
   document.getElementById('s-owner').textContent = document.getElementById('owner').value || '—';
   document.getElementById('s-date').textContent = document.getElementById('reportDate').value || '—';
@@ -933,6 +1029,18 @@ function collectReportData(status) {
     tempMin:       document.getElementById('tempMin').value,
     issues,
     totalWorkers:  document.getElementById('totalWorkers').textContent,
+    team: {
+      PM:    document.getElementById('teamPM').value,
+      RE:    document.getElementById('teamRE').value,
+      SE:    document.getElementById('teamSE').value,
+      Surv:  document.getElementById('teamSurv').value,
+      QC:    document.getElementById('teamQC').value,
+      HSE:   document.getElementById('teamHSE').value,
+      OM:    document.getElementById('teamOM').value,
+      Acc:   document.getElementById('teamAcc').value,
+      Store: document.getElementById('teamStore').value,
+      HR:    document.getElementById('teamHR').value,
+    },
     savedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
 }
