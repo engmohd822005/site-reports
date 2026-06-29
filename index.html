@@ -31,6 +31,25 @@
       return false;
     }
   };
+
+  // ══ تهيئة Firebase تلقائياً ══
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyBOTObojdKpSaOTctbC2-fC3L851BRaN-s",
+    authDomain:        "gamsa-factory.firebaseapp.com",
+    projectId:         "gamsa-factory",
+    storageBucket:     "gamsa-factory.firebasestorage.app",
+    messagingSenderId: "429311005748",
+    appId:             "1:429311005748:web:0ae9d410d58530371d6661"
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const ok = window.initFirebase(FIREBASE_CONFIG);
+    if(ok) {
+      document.getElementById('fbSetupScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+      listenAuth();
+    }
+  });
 </script>
 
 <style>
@@ -666,32 +685,7 @@ function showLoginScreen() {
   document.getElementById('loginScreen').style.display = 'flex';
 }
 
-// On page load: check if Firebase already configured
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('fb_config');
-  if(saved) {
-    try {
-      const cfg = JSON.parse(saved);
-      const ok = window.initFirebase(cfg);
-      if(ok) {
-        // Fill fields with saved values (for re-entry if needed)
-        document.getElementById('fbApiKey').value = cfg.apiKey || '';
-        document.getElementById('fbAuthDomain').value = cfg.authDomain || '';
-        document.getElementById('fbProjectId').value = cfg.projectId || '';
-        document.getElementById('fbStorageBucket').value = cfg.storageBucket || '';
-        document.getElementById('fbMessagingSenderId').value = cfg.messagingSenderId || '';
-        document.getElementById('fbAppId').value = cfg.appId || '';
-        // Listen to auth state
-        listenAuth();
-        showLoginScreen();
-        return;
-      }
-    } catch(e) {}
-  }
-  // Show Firebase setup
-  document.getElementById('fbSetupScreen').style.display = 'flex';
-  document.getElementById('loginScreen').style.display = 'none';
-});
+// On page load: handled automatically via hardcoded config above
 
 function listenAuth() {
   window._auth.onAuthStateChanged(async (firebaseUser) => {
