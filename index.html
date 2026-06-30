@@ -442,26 +442,8 @@ textarea.fi{resize:vertical;}
         </div>
       </div>
 
-      <!-- التوقيت والجدول -->
-      <div class="card">
-        <div class="card-title">
-          <div style="display:flex;align-items:center;gap:8px;flex:1;">
-            <div class="icon">📅</div>التوقيت والجدول
-          </div>
-          <button id="editSchedBtn" onclick="toggleEditSection('sched')" style="background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
-        </div>
-        <div id="schedFieldsContainer"></div>
-        <div id="schedEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
-          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--steel);">إدارة حقول التوقيت</div>
-          <div id="schedFieldsList"></div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px;">
-            <input class="fi" type="text" id="newSchedFieldName" placeholder="اسم الحقل الجديد" style="margin:0;">
-            <button onclick="addCustomField('sched')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ إضافة</button>
-          </div>
-        </div>
-      </div>
-
     </div>
+
 
     <!-- STEP 2: WORKS -->
     <div class="section" id="step2">
@@ -874,9 +856,6 @@ function setupApp() {
   document.getElementById('mergeTab').style.display = cu.perms.mergeReports ? 'flex' : 'none';
   document.getElementById('usersTab').style.display = cu.perms.manageUsers ? 'flex' : 'none';
   
-  // Set Date
-  document.getElementById('reportDate').valueAsDate = new Date();
-  
   initSubContractors();
   renderUsers();
   renderPermsTable();
@@ -887,11 +866,10 @@ function setupApp() {
   // Show edit buttons for manager only
   setTimeout(() => {
     const isManager = cu && cu.role === 'manager';
-    ['editProjBtn','editTeamBtn','editSchedBtn'].forEach(id => {
+    ['editProjBtn','editTeamBtn'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.style.display = isManager ? 'inline-block' : 'none';
     });
-    console.log('Role:', cu ? cu.role : 'null', 'isManager:', isManager);
   }, 500);
 
   // Live inbox listener from Firestore
@@ -1142,31 +1120,26 @@ async function checkPwReset() {
 }
 const DEFAULT_FIELDS = {
   proj: [
-    {id:'projName', label:'اسم المشروع', type:'text', value:'مشروع إنشاء مجمع سكني - المرحلة أ'},
-    {id:'projCode', label:'كود المشروع', type:'text', value:'PRJ-2026-001'},
-    {id:'reportNum', label:'رقم التقرير', type:'number', value:'142'},
-    {id:'owner', label:'المالك', type:'text', value:'شركة التطوير العقاري'},
-    {id:'contractor', label:'المقاول الرئيسي', type:'text', value:'شركة المقاولات المتحدة'},
+    {id:'projName', label:'اسم المشروع', type:'text', value:''},
+    {id:'contractor', label:'الشركة المنفذة', type:'text', value:''},
+    {id:'consultant', label:'الاستشاري', type:'text', value:''},
+    {id:'owner', label:'المالك', type:'text', value:''},
+    {id:'startDate', label:'تاريخ بدء المشروع', type:'date', value:''},
+    {id:'endDate', label:'تاريخ نهاية المشروع', type:'date', value:''},
+    {id:'duration', label:'مدة المشروع', type:'text', value:''},
+    {id:'revisedEndDate', label:'تاريخ الانتهاء المعدل', type:'date', value:''},
   ],
   team: [
-    {id:'teamPM', label:'مدير المشروع', type:'text', value:''},
-    {id:'teamRE', label:'المهندس المقيم', type:'text', value:''},
-    {id:'teamSE', label:'مهندس الموقع', type:'text', value:''},
-    {id:'teamSurv', label:'المساح', type:'text', value:''},
-    {id:'teamQC', label:'مهندس الجودة', type:'text', value:''},
-    {id:'teamHSE', label:'مهندس السلامة', type:'text', value:''},
-    {id:'teamOM', label:'مدير المكتب', type:'text', value:''},
-    {id:'teamAcc', label:'المحاسب', type:'text', value:''},
-    {id:'teamStore', label:'مسؤول المخازن', type:'text', value:''},
-    {id:'teamHR', label:'مسؤول الموارد البشرية', type:'text', value:''},
+    {id:'teamPM',    label:'مدير مشروع',        type:'text', value:'', count:''},
+    {id:'teamCM',    label:'مدير تنفيذ',         type:'text', value:'', count:''},
+    {id:'teamCE',    label:'مهندس تنفيذ',        type:'text', value:'', count:''},
+    {id:'teamOE',    label:'مهندس مكتب فني',     type:'text', value:'', count:''},
+    {id:'teamSurv',  label:'مساح',               type:'text', value:'', count:''},
+    {id:'teamSup',   label:'مشرف',               type:'text', value:'', count:''},
+    {id:'teamAcc',   label:'محاسب',              type:'text', value:'', count:''},
+    {id:'teamStore', label:'أمين مخازن',          type:'text', value:'', count:''},
   ],
-  sched: [
-    {id:'reportDate', label:'تاريخ التقرير', type:'date', value:''},
-    {id:'workDay', label:'يوم العمل', type:'number', value:'215'},
-    {id:'startDate', label:'تاريخ البدء', type:'date', value:'2025-11-20'},
-    {id:'contractEndDate', label:'انتهاء العقد', type:'date', value:'2026-12-30'},
-    {id:'revisedEndDate', label:'الانتهاء المعدل', type:'date', value:'2027-02-15'},
-  ]
+  sched: []
 };
 
 let dynamicFields = {};
@@ -1194,17 +1167,26 @@ function initDynamicFields() {
 }
 
 function renderAllFields() {
-  ['proj','team','sched'].forEach(sec => renderFields(sec));
+  ['proj','team'].forEach(sec => renderFields(sec));
 }
 
 function renderFields(sec) {
   const container = document.getElementById(sec + 'FieldsContainer');
   if(!container) return;
   const fields = dynamicFields[sec] || [];
-  container.innerHTML = fields.map(f => `
-    <span class="lbl">${f.label}</span>
-    <input class="fi" type="${f.type}" id="${f.id}" value="${f.value || ''}" placeholder="${f.label}">
-  `).join('');
+  if(sec === 'team') {
+    container.innerHTML = fields.map(f => `
+      <div class="row-2">
+        <div><span class="lbl">${f.label}</span><input class="fi" type="text" id="${f.id}" value="${f.value || ''}" placeholder="الاسم"></div>
+        <div><span class="lbl">العدد</span><input class="fi" type="number" id="${f.id}_count" value="${f.count || ''}" placeholder="0" min="0"></div>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = fields.map(f => `
+      <span class="lbl">${f.label}</span>
+      <input class="fi" type="${f.type}" id="${f.id}" value="${f.value || ''}" placeholder="${f.label}">
+    `).join('');
+  }
 
   // Also render edit panel list
   const listEl = document.getElementById(sec + 'FieldsList');
@@ -1230,7 +1212,9 @@ function addCustomField(sec) {
   if(!label) return;
   const id = sec + '_custom_' + Date.now();
   if(!dynamicFields[sec]) dynamicFields[sec] = [];
-  dynamicFields[sec].push({id, label, type:'text', value:''});
+  const newField = {id, label, type:'text', value:''};
+  if(sec === 'team') newField.count = '';
+  dynamicFields[sec].push(newField);
   inp.value = '';
   saveFieldsConfig();
   renderFields(sec);
@@ -1257,7 +1241,14 @@ function getFieldValues(sec) {
   const result = {};
   fields.forEach(f => {
     const el = document.getElementById(f.id);
-    if(el) result[f.label] = el.value;
+    if(el) {
+      if(sec === 'team') {
+        const countEl = document.getElementById(f.id + '_count');
+        result[f.label] = { name: el.value, count: countEl ? countEl.value : '' };
+      } else {
+        result[f.label] = el.value;
+      }
+    }
   });
   return result;
 }
@@ -1266,7 +1257,7 @@ function buildSummary() {
   const g = id => { const el = document.getElementById(id); return el ? el.value : '—'; };
   document.getElementById('s-proj').textContent = g('projName') || '—';
   document.getElementById('s-owner').textContent = g('owner') || '—';
-  document.getElementById('s-date').textContent = g('reportDate') || '—';
+  document.getElementById('s-date').textContent = new Date().toLocaleDateString('ar-EG');
   document.getElementById('s-eng').textContent = cu.fullName;
   document.getElementById('s-workers').textContent = document.getElementById('totalWorkers').textContent + ' عامل';
   document.getElementById('s-progress').textContent = (g('progress') || '0') + '%';
@@ -1275,9 +1266,7 @@ function buildSummary() {
 function collectReportData(status) {
   const projFields = getFieldValues('proj');
   const teamFields = getFieldValues('team');
-  const schedFields = getFieldValues('sched');
   const projNameEl = document.getElementById('projName');
-  const reportDateEl = document.getElementById('reportDate');
   return {
     uid: cu.uid,
     engName: cu.fullName,
@@ -1291,8 +1280,8 @@ function collectReportData(status) {
     weather:     wxVal,
     tempMax:     document.getElementById('tempMax') ? document.getElementById('tempMax').value : '',
     tempMin:     document.getElementById('tempMin') ? document.getElementById('tempMin').value : '',
-    reportDate:  reportDateEl ? reportDateEl.value : '',
-    projFields, teamFields, schedFields,
+    reportDate:  new Date().toISOString().split('T')[0],
+    projFields, teamFields,
     issues,
     totalWorkers: document.getElementById('totalWorkers').textContent,
     savedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1303,7 +1292,7 @@ async function sendReport() {
   if(!window._fbReady) { showToast('⚠️ Firebase غير متصل'); return; }
   const data = collectReportData('sent');
   data.sentAt = firebase.firestore.FieldValue.serverTimestamp();
-  const docId = cu.uid + '_' + document.getElementById('reportDate').value;
+  const docId = cu.uid + '_' + data.reportDate;
   await window._db.collection('reports').doc(docId).set(data);
   showToast('📤 تم إرسال التقرير بنجاح للمدير');
 }
@@ -1311,7 +1300,7 @@ async function sendReport() {
 async function submitReport() {
   if(!window._fbReady) { showToast('⚠️ Firebase غير متصل'); return; }
   const data = collectReportData('draft');
-  const docId = cu.uid + '_' + document.getElementById('reportDate').value + '_draft';
+  const docId = cu.uid + '_' + data.reportDate + '_draft';
   await window._db.collection('reports').doc(docId).set(data);
   showToast('💾 تم حفظ المسودة بنجاح');
 }
