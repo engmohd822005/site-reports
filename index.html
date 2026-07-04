@@ -412,7 +412,24 @@ textarea.fi{resize:vertical;}
           </div>
           <button id="editProjBtn" onclick="toggleEditSection('proj')" style="background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
-        <div id="projFieldsContainer"></div>
+        <div id="projFieldsContainer">
+          <span class="lbl">اسم المشروع</span>
+          <input class="fi" type="text" id="projName" placeholder="اسم المشروع">
+          <span class="lbl">الشركة المنفذة</span>
+          <input class="fi" type="text" id="contractor" placeholder="الشركة المنفذة">
+          <span class="lbl">الاستشاري</span>
+          <input class="fi" type="text" id="consultant" placeholder="الاستشاري">
+          <span class="lbl">المالك</span>
+          <input class="fi" type="text" id="owner" placeholder="المالك">
+          <div class="row-2">
+            <div><span class="lbl">تاريخ بدء المشروع</span><input class="fi" type="date" id="startDate"></div>
+            <div><span class="lbl">تاريخ نهاية المشروع</span><input class="fi" type="date" id="endDate"></div>
+          </div>
+          <div class="row-2">
+            <div><span class="lbl">مدة المشروع</span><input class="fi" type="text" id="duration" placeholder="مثال: 18 شهر"></div>
+            <div><span class="lbl">تاريخ الانتهاء المعدل</span><input class="fi" type="date" id="revisedEndDate"></div>
+          </div>
+        </div>
         <div id="projEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
           <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--steel);">إدارة حقول بيانات المشروع</div>
           <div id="projFieldsList"></div>
@@ -431,7 +448,19 @@ textarea.fi{resize:vertical;}
           </div>
           <button id="editTeamBtn" onclick="toggleEditSection('team')" style="background:var(--amber);border:none;color:#fff;border-radius:8px;padding:4px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✏️ تعديل الحقول</button>
         </div>
-        <div id="teamFieldsContainer"></div>
+        <div id="teamFieldsContainer">
+          <div style="font-size:12px;font-weight:700;color:var(--mid);margin-bottom:6px;display:grid;grid-template-columns:1fr 80px;gap:8px;padding:0 4px;">
+            <span>المسمى الوظيفي / الاسم</span><span style="text-align:center;">العدد</span>
+          </div>
+          <div class="row-2"><div><span class="lbl">مدير مشروع</span><input class="fi" type="text" id="teamPM" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamPM_count" placeholder="0" min="0"></div></div>
+          <div class="row-2"><div><span class="lbl">مدير تنفيذ</span><input class="fi" type="text" id="teamCM" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamCM_count" placeholder="0" min="0"></div></div>
+          <div class="row-2"><div><span class="lbl">مهندس تنفيذ</span><input class="fi" type="text" id="teamCE" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamCE_count" placeholder="0" min="0"></div></div>
+          <div class="row-2"><div><span class="lbl">مهندس مكتب فني</span><input class="fi" type="text" id="teamOE" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamOE_count" placeholder="0" min="0"></div></div>
+          <div class="row-2"><div><span class="lbl">مساح</span><input class="fi" type="text" id="teamSurv" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamSurv_count" placeholder="0" min="0"></div></div>
+          <div class="row-2"><div><span class="lbl">مشرف</span><input class="fi" type="text" id="teamSup" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamSup_count" placeholder="0" min="0"></div></div>
+          <div class="row-2"><div><span class="lbl">محاسب</span><input class="fi" type="text" id="teamAcc" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamAcc_count" placeholder="0" min="0"></div></div>
+          <div class="row-2"><div><span class="lbl">أمين مخازن</span><input class="fi" type="text" id="teamStore" placeholder="الاسم"></div><div><span class="lbl">العدد</span><input class="fi" type="number" id="teamStore_count" placeholder="0" min="0"></div></div>
+        </div>
         <div id="teamEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
           <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--steel);">إدارة حقول الطاقم</div>
           <div id="teamFieldsList"></div>
@@ -1148,15 +1177,28 @@ function initDynamicFields() {
   // Load from Firestore or localStorage
   const saved = localStorage.getItem('dynamic_fields');
   if(saved) {
-    dynamicFields = JSON.parse(saved);
+    try {
+      dynamicFields = JSON.parse(saved);
+    } catch(e) {
+      dynamicFields = JSON.parse(JSON.stringify(DEFAULT_FIELDS));
+    }
   } else {
     dynamicFields = JSON.parse(JSON.stringify(DEFAULT_FIELDS));
+  }
+  // Safety check: if proj or team are missing/empty, use defaults
+  if(!dynamicFields.proj || dynamicFields.proj.length === 0) {
+    dynamicFields.proj = JSON.parse(JSON.stringify(DEFAULT_FIELDS.proj));
+  }
+  if(!dynamicFields.team || dynamicFields.team.length === 0) {
+    dynamicFields.team = JSON.parse(JSON.stringify(DEFAULT_FIELDS.team));
   }
   // Load from Firestore if available
   if(window._fbReady) {
     window._db.collection('settings').doc('fields').get().then(snap => {
       if(snap.exists) {
-        dynamicFields = snap.data();
+        const fbData = snap.data();
+        if(fbData.proj && fbData.proj.length > 0) dynamicFields.proj = fbData.proj;
+        if(fbData.team && fbData.team.length > 0) dynamicFields.team = fbData.team;
         localStorage.setItem('dynamic_fields', JSON.stringify(dynamicFields));
       }
       renderAllFields();
@@ -1255,33 +1297,47 @@ function getFieldValues(sec) {
 
 function buildSummary() {
   const g = id => { const el = document.getElementById(id); return el ? el.value : '—'; };
-  document.getElementById('s-proj').textContent = g('projName') || '—';
-  document.getElementById('s-owner').textContent = g('owner') || '—';
-  document.getElementById('s-date').textContent = new Date().toLocaleDateString('ar-EG');
-  document.getElementById('s-eng').textContent = cu.fullName;
+  document.getElementById('s-proj').textContent    = g('projName') || '—';
+  document.getElementById('s-owner').textContent   = g('owner') || '—';
+  document.getElementById('s-date').textContent    = new Date().toLocaleDateString('ar-EG');
+  document.getElementById('s-eng').textContent     = cu.fullName;
   document.getElementById('s-workers').textContent = document.getElementById('totalWorkers').textContent + ' عامل';
-  document.getElementById('s-progress').textContent = (g('progress') || '0') + '%';
+  document.getElementById('s-progress').textContent= (g('progress') || '0') + '%';
 }
 
 function collectReportData(status) {
-  const projFields = getFieldValues('proj');
-  const teamFields = getFieldValues('team');
-  const projNameEl = document.getElementById('projName');
+  const g = id => { const el = document.getElementById(id); return el ? el.value : ''; };
   return {
     uid: cu.uid,
     engName: cu.fullName,
     role: cu.role,
     status,
-    projName:    projNameEl ? projNameEl.value : (projFields['اسم المشروع'] || ''),
-    mainWorks:   document.getElementById('mainWorks') ? document.getElementById('mainWorks').value : '',
-    progress:    document.getElementById('progress') ? document.getElementById('progress').value : '',
-    floor:       document.getElementById('floor') ? document.getElementById('floor').value : '',
-    tomorrow:    document.getElementById('tomorrow') ? document.getElementById('tomorrow').value : '',
+    projName:    g('projName'),
+    contractor:  g('contractor'),
+    consultant:  g('consultant'),
+    owner:       g('owner'),
+    startDate:   g('startDate'),
+    endDate:     g('endDate'),
+    duration:    g('duration'),
+    revisedEndDate: g('revisedEndDate'),
+    team: {
+      PM:    { name: g('teamPM'),    count: g('teamPM_count') },
+      CM:    { name: g('teamCM'),    count: g('teamCM_count') },
+      CE:    { name: g('teamCE'),    count: g('teamCE_count') },
+      OE:    { name: g('teamOE'),    count: g('teamOE_count') },
+      Surv:  { name: g('teamSurv'), count: g('teamSurv_count') },
+      Sup:   { name: g('teamSup'),  count: g('teamSup_count') },
+      Acc:   { name: g('teamAcc'),  count: g('teamAcc_count') },
+      Store: { name: g('teamStore'),count: g('teamStore_count') },
+    },
+    mainWorks:   g('mainWorks'),
+    progress:    g('progress'),
+    floor:       g('floor'),
+    tomorrow:    g('tomorrow'),
     weather:     wxVal,
-    tempMax:     document.getElementById('tempMax') ? document.getElementById('tempMax').value : '',
-    tempMin:     document.getElementById('tempMin') ? document.getElementById('tempMin').value : '',
+    tempMax:     g('tempMax'),
+    tempMin:     g('tempMin'),
     reportDate:  new Date().toISOString().split('T')[0],
-    projFields, teamFields,
     issues,
     totalWorkers: document.getElementById('totalWorkers').textContent,
     savedAt: firebase.firestore.FieldValue.serverTimestamp(),
