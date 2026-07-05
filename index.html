@@ -1381,6 +1381,7 @@ function collectReportData(status) {
     reportDate:  new Date().toISOString().split('T')[0],
     issues,
     totalWorkers: document.getElementById('totalWorkers').textContent,
+    photos: collectPhotos(),
     savedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
 }
@@ -1438,6 +1439,33 @@ function addWkRow(id) {
 
 function addPermanentRow() { addWkRow('permanentList'); }
 function addExternalRow() { addWkRow('externalList'); }
+
+function addSubContractor() {
+  const name = prompt('اسم مقاول الباطن:');
+  if(!name || !name.trim()) return;
+  const container = document.getElementById('subContractors');
+  const id = 'sc_' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'sc-block';
+  const colors = ['#7B2FBE','#1565C0','#2E7D32','#C62828','#F57F17','#00838F'];
+  const color = colors[Math.floor(Math.random()*colors.length)];
+  div.innerHTML = `
+    <div class="sc-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display==='none'?'block':'none'">
+      <h4><span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block;margin-left:6px;"></span>${name.trim()}</h4>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:10px;color:var(--mid);">▼</span>
+        <button onclick="event.stopPropagation();this.closest('.sc-block').remove();calcTotal()" style="background:var(--rust);color:#fff;border:none;border-radius:6px;padding:2px 7px;font-size:10px;cursor:pointer;">✕</button>
+      </div>
+    </div>
+    <div class="sc-body" style="display:block;">
+      <div id="sc-list-${id}">
+        <div class="wk-row"><input class="fi" placeholder="التخصص"><input class="fi" type="number" oninput="calcTotal()" placeholder="0"><input class="fi" type="number" placeholder="0"><button class="del-row" onclick="this.parentElement.remove();calcTotal()">✕</button></div>
+      </div>
+      <button class="add-btn" onclick="addWkRow('sc-list-${id}')">+ إضافة تخصص</button>
+    </div>
+  `;
+  container.appendChild(div);
+}
 
 function calcTotal() {
   let t = 0;
@@ -1698,6 +1726,16 @@ function showToast(m) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+function collectPhotos() {
+  const photos = [];
+  document.querySelectorAll('#photoGrid > div').forEach(div => {
+    const img = div.querySelector('img');
+    const desc = div.querySelector('[id^="desc_"]');
+    if(img) photos.push({ src: img.src, desc: desc ? desc.textContent : '' });
+  });
+  return photos;
+}
+
 // ══ REPORTS HISTORY ══
 let currentReportData = null;
 
@@ -1796,6 +1834,23 @@ function previewReport(r) {
         <td style="padding:8px 12px;font-weight:700;font-size:14px;">📅 خطة الغد</td>
       </tr>
       <tr><td style="padding:10px;border:1px solid #ddd;line-height:1.8;">${r.tomorrow}</td></tr>
+    </table>` : ''}
+
+    ${r.photos && r.photos.length > 0 ? `
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr style="background:#2E4A62;color:#fff;">
+        <td style="padding:8px 12px;font-weight:700;font-size:14px;">📸 صور الأعمال الميدانية</td>
+      </tr>
+      <tr><td style="padding:10px;">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+          ${r.photos.map(p => `
+            <div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+              <img src="${p.src}" style="width:100%;height:160px;object-fit:cover;display:block;">
+              ${p.desc ? `<div style="padding:5px 8px;font-size:11px;color:#555;text-align:center;">${p.desc}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </td></tr>
     </table>` : ''}
 
     <div style="margin-top:30px;display:grid;grid-template-columns:1fr 1fr;gap:20px;text-align:center;">
