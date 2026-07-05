@@ -385,6 +385,7 @@ textarea.fi{resize:vertical;}
     <button class="tab-btn active" onclick="showView('report',this)"><span class="ti">📝</span>تقريري</button>
     <button class="tab-btn" onclick="showView('store',this)"><span class="ti">📦</span>المخزن</button>
     <button class="tab-btn" id="mergeTab" onclick="showView('merge',this)" style="display:none;"><span class="ti">📬</span>الدمج <span class="nbadge" id="inboxBadge">0</span></button>
+    <button class="tab-btn" id="reportsTab" onclick="showView('reports',this);loadMyReports();"><span class="ti">📂</span>تقاريري</button>
     <button class="tab-btn" id="usersTab" onclick="showView('users',this)" style="display:none;"><span class="ti">👥</span>المستخدمين</button>
     <button class="tab-btn" onclick="showView('perms',this)"><span class="ti">🔐</span>صلاحياتي</button>
   </div>
@@ -422,12 +423,12 @@ textarea.fi{resize:vertical;}
           <span class="lbl">المالك</span>
           <input class="fi" type="text" id="owner" placeholder="المالك">
           <div class="row-2">
-            <div><span class="lbl">تاريخ بدء المشروع</span><input class="fi" type="date" id="startDate"></div>
-            <div><span class="lbl">تاريخ نهاية المشروع</span><input class="fi" type="date" id="endDate"></div>
+            <div><span class="lbl">تاريخ بدء المشروع</span><input class="fi" type="text" id="startDate" placeholder="DD/MM/YYYY" maxlength="10" oninput="autoFormatDate(this)"></div>
+            <div><span class="lbl">تاريخ نهاية المشروع</span><input class="fi" type="text" id="endDate" placeholder="DD/MM/YYYY" maxlength="10" oninput="autoFormatDate(this)"></div>
           </div>
           <div class="row-2">
             <div><span class="lbl">مدة المشروع</span><input class="fi" type="text" id="duration" placeholder="مثال: 18 شهر"></div>
-            <div><span class="lbl">تاريخ الانتهاء المعدل</span><input class="fi" type="date" id="revisedEndDate"></div>
+            <div><span class="lbl">تاريخ الانتهاء المعدل</span><input class="fi" type="text" id="revisedEndDate" placeholder="DD/MM/YYYY" maxlength="10" oninput="autoFormatDate(this)"></div>
           </div>
         </div>
         <div id="projEditPanel" style="display:none;background:#F8F6F2;border-radius:10px;padding:12px;margin-top:10px;">
@@ -669,7 +670,32 @@ textarea.fi{resize:vertical;}
       </div>
     </div>
   </div>
-</div>
+
+  <!-- REPORTS HISTORY VIEW -->
+  <div class="app-view" id="app-reports">
+    <div style="padding:13px;">
+      <div class="card">
+        <div class="card-title"><div class="icon">📂</div>تقاريري السابقة</div>
+        <div id="reportsList" style="min-height:80px;display:flex;align-items:center;justify-content:center;">
+          <div style="color:var(--mid);font-size:13px;">⏳ جارٍ التحميل...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF PREVIEW MODAL -->
+  <div id="pdfModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;overflow-y:auto;padding:16px;">
+    <div style="background:#fff;border-radius:16px;max-width:700px;margin:0 auto;padding:0;overflow:hidden;">
+      <div style="background:var(--dark);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:#fff;font-weight:700;font-size:14px;">📄 معاينة التقرير</span>
+        <div style="display:flex;gap:8px;">
+          <button onclick="exportPDF()" style="background:var(--amber);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">⬇️ تصدير PDF</button>
+          <button onclick="document.getElementById('pdfModal').style.display='none'" style="background:var(--rust);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;">✕ إغلاق</button>
+        </div>
+      </div>
+      <div id="pdfContent" style="padding:24px;direction:rtl;font-family:'Cairo',sans-serif;"></div>
+    </div>
+  </div>
 
 <!-- USER MODAL -->
 <div class="modal-overlay" id="userModal">
@@ -1153,10 +1179,10 @@ const DEFAULT_FIELDS = {
     {id:'contractor', label:'الشركة المنفذة', type:'text', value:''},
     {id:'consultant', label:'الاستشاري', type:'text', value:''},
     {id:'owner', label:'المالك', type:'text', value:''},
-    {id:'startDate', label:'تاريخ بدء المشروع', type:'date', value:''},
-    {id:'endDate', label:'تاريخ نهاية المشروع', type:'date', value:''},
+    {id:'startDate', label:'تاريخ بدء المشروع', type:'text', value:''},
+    {id:'endDate', label:'تاريخ نهاية المشروع', type:'text', value:''},
     {id:'duration', label:'مدة المشروع', type:'text', value:''},
-    {id:'revisedEndDate', label:'تاريخ الانتهاء المعدل', type:'date', value:''},
+    {id:'revisedEndDate', label:'تاريخ الانتهاء المعدل', type:'text', value:''},
   ],
   team: [
     {id:'teamPM',    label:'مدير مشروع',        type:'text', value:'', count:''},
@@ -1295,11 +1321,26 @@ function getFieldValues(sec) {
   return result;
 }
 
+// ══ DATE FORMAT ══
+function todayFormatted() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+function autoFormatDate(inp) {
+  let v = inp.value.replace(/\D/g,'');
+  if(v.length >= 3 && v.length <= 4) v = v.slice(0,2) + '/' + v.slice(2);
+  else if(v.length > 4) v = v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4,8);
+  inp.value = v;
+}
+
 function buildSummary() {
   const g = id => { const el = document.getElementById(id); return el ? el.value : '—'; };
   document.getElementById('s-proj').textContent    = g('projName') || '—';
   document.getElementById('s-owner').textContent   = g('owner') || '—';
-  document.getElementById('s-date').textContent    = new Date().toLocaleDateString('ar-EG');
+  document.getElementById('s-date').textContent    = todayFormatted();
   document.getElementById('s-eng').textContent     = cu.fullName;
   document.getElementById('s-workers').textContent = document.getElementById('totalWorkers').textContent + ' عامل';
   document.getElementById('s-progress').textContent= (g('progress') || '0') + '%';
@@ -1473,7 +1514,7 @@ function toggleSel(id) {
 
 function generateMerged() {
   const sel = inbox.filter(r => r.selected);
-  const today = new Date().toLocaleDateString('ar-SA', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const today = todayFormatted();
   
   let html = `
     <div class="merged-box" id="mergedBoxEl">
@@ -1494,10 +1535,6 @@ function generateMerged() {
   document.getElementById('mergedOut').innerHTML = html;
   document.getElementById('mergedOut').style.display = 'block';
   document.getElementById('mergedOut').scrollIntoView({behavior:'smooth'});
-}
-
-function exportPDF() {
-  window.print();
 }
 
 // ══ USER MANAGEMENT ══
@@ -1659,6 +1696,146 @@ function showToast(m) {
   t.textContent = m;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══ REPORTS HISTORY ══
+let currentReportData = null;
+
+async function loadMyReports() {
+  const listEl = document.getElementById('reportsList');
+  listEl.innerHTML = '<div style="color:var(--mid);font-size:13px;text-align:center;">⏳ جارٍ التحميل...</div>';
+  if(!window._fbReady) { listEl.innerHTML = '<div style="color:var(--rust);font-size:13px;text-align:center;">⚠️ Firebase غير متصل</div>'; return; }
+  try {
+    const snap = await window._db.collection('reports')
+      .where('uid','==', cu.uid)
+      .get();
+    if(snap.empty) {
+      listEl.innerHTML = '<div style="color:var(--mid);font-size:13px;text-align:center;padding:20px;">لا توجد تقارير محفوظة بعد</div>';
+      return;
+    }
+    const reports = snap.docs.map(d => ({id: d.id, ...d.data()}))
+      .sort((a,b) => (b.reportDate||'').localeCompare(a.reportDate||''));
+    listEl.innerHTML = reports.map(r => `
+      <div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fafafa;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--dark);">${r.projName || 'بدون اسم'}</div>
+            <div style="font-size:11px;color:var(--mid);">📅 ${r.reportDate || '—'} &nbsp;|&nbsp; ${r.status === 'sent' ? '✅ مُرسل' : '📝 مسودة'}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="previewReport(${JSON.stringify(r).replace(/"/g,'&quot;')})" style="background:var(--steel);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">👁️ عرض</button>
+            <button onclick="previewReport(${JSON.stringify(r).replace(/"/g,'&quot;')});setTimeout(exportPDF,300)" style="background:var(--amber);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⬇️ PDF</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--mid);">🔨 ${(r.mainWorks||'').substring(0,60)}${(r.mainWorks||'').length>60?'...':''}</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error(e);
+    listEl.innerHTML = '<div style="color:var(--rust);font-size:13px;text-align:center;padding:20px;">⚠️ خطأ في تحميل التقارير</div>';
+  }
+}
+
+function previewReport(r) {
+  currentReportData = r;
+  const teamRows = r.team ? Object.entries(r.team).map(([k,v]) => {
+    const labels = {PM:'مدير مشروع',CM:'مدير تنفيذ',CE:'مهندس تنفيذ',OE:'مهندس مكتب فني',Surv:'مساح',Sup:'مشرف',Acc:'محاسب',Store:'أمين مخازن'};
+    const val = typeof v === 'object' ? `${v.name||''} (${v.count||0})` : v;
+    return `<tr><td style="padding:5px 10px;border:1px solid #ddd;font-weight:600;">${labels[k]||k}</td><td style="padding:5px 10px;border:1px solid #ddd;">${val}</td></tr>`;
+  }).join('') : '';
+
+  document.getElementById('pdfContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:20px;border-bottom:3px solid #1C2B3A;padding-bottom:16px;">
+      <div style="font-size:22px;font-weight:900;color:#1C2B3A;">نظام التقارير اليومية</div>
+      <div style="font-size:14px;color:#FFA726;font-weight:700;">م/ محمد عبد القوي</div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr style="background:#1C2B3A;color:#fff;">
+        <td colspan="2" style="padding:8px 12px;font-weight:700;font-size:14px;">📋 بيانات المشروع</td>
+      </tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;width:35%;font-weight:600;">اسم المشروع</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.projName||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">الشركة المنفذة</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.contractor||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">الاستشاري</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.consultant||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">المالك</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.owner||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">تاريخ التقرير</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.reportDate||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">تاريخ البدء</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.startDate||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">تاريخ النهاية</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.endDate||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">مدة المشروع</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.duration||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">تاريخ الانتهاء المعدل</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.revisedEndDate||'—'}</td></tr>
+    </table>
+
+    ${teamRows ? `
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr style="background:#2E4A62;color:#fff;">
+        <td colspan="2" style="padding:8px 12px;font-weight:700;font-size:14px;">👷 الطاقم الفني والإداري</td>
+      </tr>
+      ${teamRows}
+    </table>` : ''}
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr style="background:#1C2B3A;color:#fff;">
+        <td colspan="2" style="padding:8px 12px;font-weight:700;font-size:14px;">🔨 الأعمال المنفذة</td>
+      </tr>
+      <tr><td colspan="2" style="padding:10px;border:1px solid #ddd;line-height:1.8;">${r.mainWorks||'—'}</td></tr>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr style="background:#1C2B3A;color:#fff;">
+        <td colspan="2" style="padding:8px 12px;font-weight:700;font-size:14px;">📊 مؤشرات الأداء</td>
+      </tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;width:35%;">نسبة الإنجاز</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.progress||'0'}%</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">الطابق / المنطقة</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.floor||'—'}</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">حالة الطقس</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.weather||'—'} | ${r.tempMax||'—'}°C / ${r.tempMin||'—'}°C</td></tr>
+      <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:600;">إجمالي العمالة</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.totalWorkers||'—'} عامل</td></tr>
+    </table>
+
+    ${r.tomorrow ? `
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr style="background:#2E4A62;color:#fff;">
+        <td style="padding:8px 12px;font-weight:700;font-size:14px;">📅 خطة الغد</td>
+      </tr>
+      <tr><td style="padding:10px;border:1px solid #ddd;line-height:1.8;">${r.tomorrow}</td></tr>
+    </table>` : ''}
+
+    <div style="margin-top:30px;display:grid;grid-template-columns:1fr 1fr;gap:20px;text-align:center;">
+      <div style="border-top:2px solid #1C2B3A;padding-top:8px;">
+        <div style="font-size:12px;font-weight:600;">توقيع المهندس المسؤول</div>
+        <div style="font-size:11px;color:#777;margin-top:4px;">${r.engName||cu.fullName}</div>
+      </div>
+      <div style="border-top:2px solid #1C2B3A;padding-top:8px;">
+        <div style="font-size:12px;font-weight:600;">توقيع المدير</div>
+        <div style="font-size:11px;color:#777;margin-top:4px;">م/ محمد عبد القوي</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('pdfModal').style.display = 'block';
+}
+
+function exportPDF() {
+  const content = document.getElementById('pdfContent');
+  const r = currentReportData;
+  const fileName = `تقرير_${r.projName||'المشروع'}_${r.reportDate||todayFormatted()}.pdf`;
+  const printWin = window.open('','_blank');
+  printWin.document.write(`
+    <html dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>${fileName}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+      <style>
+        body { font-family: 'Cairo', sans-serif; padding: 20px; color: #1C2B3A; direction: rtl; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+        @media print { @page { margin: 15mm; size: A4; } }
+      </style>
+    </head>
+    <body>
+      ${content.innerHTML}
+      <script>window.onload=()=>{window.print();window.close();}<\/script>
+    </body>
+    </html>
+  `);
+  printWin.document.close();
 }
 
 function resetFirebaseConfig() {
