@@ -478,9 +478,23 @@ textarea.fi{resize:vertical;}
     <!-- STEP 2: WORKS -->
     <div class="section" id="step2">
       <div class="card">
-        <div class="card-title"><div class="icon">🔨</div>الأعمال المنفذة اليوم</div>
+        <div class="card-title"><div class="icon">📅</div>تاريخ التقرير</div>
+        <span class="lbl">تاريخ اليوم المراد التقرير عنه</span>
+        <input class="fi" type="text" id="reportDate" placeholder="DD/MM/YYYY" maxlength="10" oninput="autoFormatDate(this)">
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          <button onclick="setReportDate(0)" style="flex:1;padding:8px;background:var(--steel);color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📅 اليوم</button>
+          <button onclick="setReportDate(-1)" style="flex:1;padding:8px;background:#78909C;color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">◀ أمس</button>
+          <button onclick="setReportDate(-2)" style="flex:1;padding:8px;background:#90A4AE;color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">◀◀ قبل أمس</button>
+        </div>
+        <div style="margin-top:8px;">
+          <span class="lbl">أو اختر تاريخاً محدداً</span>
+          <input class="fi" type="date" id="reportDatePicker" onchange="setReportDateFromPicker(this.value)" style="direction:ltr;">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon">🔨</div>الأعمال المنفذة</div>
         <span class="lbl">وصف الأعمال الرئيسية</span>
-        <textarea class="fi" id="mainWorks" rows="6" placeholder="اكتب تفاصيل ما تم إنجازه اليوم..."></textarea>
+        <textarea class="fi" id="mainWorks" rows="6" placeholder="اكتب تفاصيل ما تم إنجازه..."></textarea>
         <div class="row-2">
           <div><span class="lbl">نسبة الإنجاز %</span><input class="fi" type="number" id="progress" placeholder="0"></div>
           <div><span class="lbl">الطابق / المنطقة</span><input class="fi" type="text" id="floor" placeholder="مثلاً: الطابق الثالث"></div>
@@ -917,6 +931,8 @@ function setupApp() {
   renderMyPerms();
   loadTeam();
   initDynamicFields();
+  // Set today as default report date
+  setReportDate(0);
 
   // Show edit buttons for manager only
   setTimeout(() => {
@@ -1321,6 +1337,25 @@ function getFieldValues(sec) {
   return result;
 }
 
+function setReportDate(daysOffset) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  const el = document.getElementById('reportDate');
+  if(el) el.value = `${dd}/${mm}/${yyyy}`;
+}
+
+function setReportDateFromPicker(val) {
+  if(!val) return;
+  const parts = val.split('-');
+  if(parts.length === 3) {
+    const el = document.getElementById('reportDate');
+    if(el) el.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+}
+
 // ══ DATE FORMAT ══
 function todayFormatted() {
   const d = new Date();
@@ -1340,7 +1375,7 @@ function buildSummary() {
   const g = id => { const el = document.getElementById(id); return el ? el.value : '—'; };
   document.getElementById('s-proj').textContent    = g('projName') || '—';
   document.getElementById('s-owner').textContent   = g('owner') || '—';
-  document.getElementById('s-date').textContent    = todayFormatted();
+  document.getElementById('s-date').textContent = document.getElementById('reportDate') ? document.getElementById('reportDate').value : todayFormatted();
   document.getElementById('s-eng').textContent     = cu.fullName;
   document.getElementById('s-workers').textContent = document.getElementById('totalWorkers').textContent + ' عامل';
   document.getElementById('s-progress').textContent= (g('progress') || '0') + '%';
@@ -1378,7 +1413,7 @@ function collectReportData(status) {
     weather:     wxVal,
     tempMax:     g('tempMax'),
     tempMin:     g('tempMin'),
-    reportDate:  new Date().toISOString().split('T')[0],
+    reportDate:  document.getElementById('reportDate') ? document.getElementById('reportDate').value : todayFormatted(),
     issues,
     totalWorkers: document.getElementById('totalWorkers').textContent,
     photos: collectPhotos(),
