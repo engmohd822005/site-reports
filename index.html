@@ -690,9 +690,7 @@ textarea.fi{resize:vertical;}
     <div style="padding:13px;">
       <div class="card">
         <div class="card-title"><div class="icon">📂</div>تقاريري السابقة</div>
-        <div id="reportsList" style="min-height:80px;display:flex;align-items:center;justify-content:center;">
-          <div style="color:var(--mid);font-size:13px;">⏳ جارٍ التحميل...</div>
-        </div>
+        <div id="reportsList" style="min-height:80px;"></div>
       </div>
     </div>
   </div>
@@ -1788,21 +1786,77 @@ async function loadMyReports() {
     }
     const reports = snap.docs.map(d => ({id: d.id, ...d.data()}))
       .sort((a,b) => (b.reportDate||'').localeCompare(a.reportDate||''));
-    listEl.innerHTML = reports.map(r => `
-      <div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fafafa;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--dark);">${r.projName || 'بدون اسم'}</div>
-            <div style="font-size:11px;color:var(--mid);">📅 ${r.reportDate || '—'} &nbsp;|&nbsp; ${r.status === 'sent' ? '✅ مُرسل' : '📝 مسودة'}</div>
+    listEl.innerHTML = `
+      <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13px;font-weight:700;color:var(--dark);">إجمالي التقارير: <span style="color:var(--amber)">${reports.length}</span></div>
+        <div style="font-size:11px;color:var(--mid);">مرتبة من الأحدث للأقدم</div>
+      </div>
+    ` + reports.map((r, i) => {
+      const isSent = r.status === 'sent';
+      const rJson = JSON.stringify(r).replace(/"/g,'&quot;');
+      return `
+      <div style="background:#fff;border-radius:16px;margin-bottom:14px;box-shadow:0 3px 16px rgba(0,0,0,.09);overflow:hidden;">
+
+        <!-- شريط العنوان -->
+        <div style="background:linear-gradient(135deg,#1C2B3A 0%,#2E4A62 100%);padding:13px 16px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="flex:1;margin-left:8px;">
+            <div style="color:#fff;font-size:13px;font-weight:800;margin-bottom:2px;">${r.projName || 'بدون اسم مشروع'}</div>
+            <div style="color:rgba(255,255,255,.6);font-size:10px;">${r.contractor || ''}</div>
           </div>
-          <div style="display:flex;gap:6px;">
-            <button onclick="previewReport(${JSON.stringify(r).replace(/"/g,'&quot;')})" style="background:var(--steel);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">👁️ عرض</button>
-            <button onclick="previewReport(${JSON.stringify(r).replace(/"/g,'&quot;')});setTimeout(exportPDF,300)" style="background:var(--amber);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⬇️ PDF</button>
+          <div style="background:${isSent?'#4CAF50':'#FFA726'};color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;">
+            ${isSent ? '✅ مُرسل' : '📝 مسودة'}
           </div>
         </div>
-        <div style="font-size:11px;color:var(--mid);">🔨 ${(r.mainWorks||'').substring(0,60)}${(r.mainWorks||'').length>60?'...':''}</div>
+
+        <!-- التاريخ والرقم -->
+        <div style="background:#F8F9FA;padding:9px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span style="font-size:14px;">📅</span>
+            <span style="font-size:12px;font-weight:700;color:var(--dark);">${r.reportDate || '—'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span style="font-size:11px;color:var(--mid);">بقلم:</span>
+            <span style="font-size:11px;font-weight:600;color:var(--steel);">${r.engName || cu.fullName}</span>
+          </div>
+        </div>
+
+        <!-- المؤشرات -->
+        <div style="padding:12px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-bottom:1px solid #f0f0f0;">
+          <div style="text-align:center;background:#EEF2F7;border-radius:10px;padding:8px 4px;">
+            <div style="font-size:16px;font-weight:900;color:var(--steel);">${r.progress || '0'}%</div>
+            <div style="font-size:9px;color:var(--mid);margin-top:1px;">الإنجاز</div>
+          </div>
+          <div style="text-align:center;background:#EEF2F7;border-radius:10px;padding:8px 4px;">
+            <div style="font-size:16px;font-weight:900;color:var(--steel);">${r.totalWorkers || '0'}</div>
+            <div style="font-size:9px;color:var(--mid);margin-top:1px;">عامل</div>
+          </div>
+          <div style="text-align:center;background:#EEF2F7;border-radius:10px;padding:8px 4px;">
+            <div style="font-size:14px;font-weight:700;color:var(--steel);">${r.weather || '—'}</div>
+            <div style="font-size:9px;color:var(--mid);margin-top:1px;">الطقس</div>
+          </div>
+        </div>
+
+        <!-- ملخص الأعمال -->
+        ${r.mainWorks ? `
+        <div style="padding:10px 16px;border-bottom:1px solid #f0f0f0;">
+          <div style="font-size:10px;color:var(--mid);font-weight:600;margin-bottom:4px;">🔨 الأعمال المنفذة</div>
+          <div style="font-size:11px;color:#444;line-height:1.7;border-right:3px solid var(--amber);padding-right:8px;">${r.mainWorks.substring(0,120)}${r.mainWorks.length>120?'...':''}</div>
+        </div>` : ''}
+
+        <!-- أزرار الإجراءات -->
+        <div style="padding:10px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button onclick="previewReport(${rJson})"
+            style="padding:11px;background:var(--dark);color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
+            👁️ عرض التقرير
+          </button>
+          <button onclick="previewReport(${rJson});setTimeout(exportPDF,400)"
+            style="padding:11px;background:linear-gradient(135deg,#FF6F00,#FFA726);color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
+            ⬇️ تصدير PDF
+          </button>
+        </div>
+
       </div>
-    `).join('');
+    `}).join('');
   } catch(e) {
     console.error(e);
     listEl.innerHTML = '<div style="color:var(--rust);font-size:13px;text-align:center;padding:20px;">⚠️ خطأ في تحميل التقارير</div>';
