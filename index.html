@@ -1,3 +1,4 @@
+<!-- Build: 1783578974 -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -44,12 +45,10 @@
   };
 
   window.addEventListener('DOMContentLoaded', () => {
-    const ok = window.initFirebase(FIREBASE_CONFIG);
-    if(ok) {
-      document.getElementById('fbSetupScreen').style.display = 'none';
-      document.getElementById('loginScreen').style.display = 'flex';
-      listenAuth();
-    }
+    window.initFirebase(FIREBASE_CONFIG);
+    document.getElementById('fbSetupScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    listenAuth();
   });
 </script>
 
@@ -258,7 +257,7 @@ textarea.fi{resize:vertical;}
 <div id="toast"></div>
 
 <!-- FIREBASE SETUP SCREEN -->
-<div id="fbSetupScreen">
+<div id="fbSetupScreen" style="display:none!important">
   <div class="fb-logo">🔥</div>
   <div class="fb-title">ربط Firebase</div>
   <div class="fb-sub">للعمل على أكثر من جهاز في آن واحد</div>
@@ -2442,4 +2441,3 @@ window.onload = () => {
 </script>
 </body>
 </html>
-
